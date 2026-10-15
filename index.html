@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>ScoreOnTheDoor</title>
+  <meta name="description" content="Food hygiene ratings for the places nearest to you, from the Food Standards Agency's open data.">
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#111214" media="(prefers-color-scheme: dark)">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="ScoreOnTheDoor">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="bar">
+    <div class="bar-start">
+      <button id="back" type="button" class="icon-btn back-btn" aria-label="Back" hidden>
+        <svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true"><path fill="currentColor" d="M15.4 4.6 8 12l7.4 7.4 1.4-1.4-6-6 6-6z"/></svg>
+        <span>Back</span>
+      </button>
+      <a href="#/" class="wordmark" aria-label="ScoreOnTheDoor, home">Score<span>OnTheDoor</span></a>
+    </div>
+    <nav class="bar-actions">
+      <a href="#/settings" id="settings-link" class="text-btn">Settings</a>
+    </nav>
+  </header>
+
+  <main id="app">
+    <!-- Welcome (first launch only) -->
+    <section id="view-welcome" class="view welcome" hidden>
+      <h1>Check the hygiene rating before you go in.</h1>
+      <div class="scale" aria-hidden="true">
+        <span class="tile good r5"><span class="num">5</span></span>
+        <span class="tile good r4"><span class="num">4</span></span>
+        <span class="tile ok"><span class="num">3</span></span>
+        <span class="tile poor r2"><span class="num">2</span></span>
+        <span class="tile poor r1"><span class="num">1</span></span>
+        <span class="tile poor r0"><span class="num">0</span></span>
+      </div>
+      <div class="scale scale-scot" aria-hidden="true">
+        <span class="scot-label">Scotland</span>
+        <span class="tile fhis-pass"><span class="word">Pass</span></span>
+        <span class="tile fhis-improve"><span class="word">Improve</span></span>
+      </div>
+      <ul class="points">
+        <li>Ratings run from <strong>5</strong> (very good) to <strong>0</strong> (urgent improvement necessary). In Scotland it's <strong>Pass</strong> or <strong>Improvement required</strong>.</li>
+        <li>They come from council inspections, published by the Food Standards Agency.</li>
+        <li>Nearest places come first, as a list or on a map. Tap one for the inspection date and details.</li>
+      </ul>
+
+      <h2>Where are you?</h2>
+      <form id="welcome-search" class="search" role="search" autocomplete="off">
+        <input id="welcome-q" type="search" inputmode="search" enterkeyhint="go" autocapitalize="characters"
+               placeholder="Postcode, e.g. SW1A 2AA" aria-label="Your postcode">
+        <button type="submit" class="btn">Go</button>
+      </form>
+      <p class="or">or</p>
+      <button id="welcome-locate" type="button" class="btn wide">Use my location</button>
+      <p class="small">Your location is only used to find nearby places. No accounts, no tracking.</p>
+      <p class="small">Independent app, not affiliated with the Food Standards Agency.</p>
+    </section>
+
+    <!-- List view -->
+    <section id="view-list" class="view">
+      <form id="search" class="search" role="search" autocomplete="off">
+        <input id="q" type="search" inputmode="search" enterkeyhint="search"
+               placeholder="Name or postcode" aria-label="Search by business name or postcode">
+        <button type="submit" class="btn">Search</button>
+      </form>
+      <p id="status" class="status status-line" aria-live="polite"></p>
+      <div class="status-row">
+        <div id="view-toggle" class="toggle" role="group" aria-label="Show results as" hidden>
+          <button type="button" data-mode="list" aria-pressed="true">List</button>
+          <button type="button" data-mode="map" aria-pressed="false">Map</button>
+        </div>
+        <button id="locate" type="button" class="link-btn">Use my location</button>
+      </div>
+      <p id="offline" class="notice" hidden></p>
+      <div id="install-tip" class="install-tip" role="note" hidden>
+        <p id="install-text"></p>
+        <button type="button" id="install-btn" class="btn" hidden>Add</button>
+        <button type="button" id="install-close" class="install-close" aria-label="Don't show this again">×</button>
+      </div>
+      <div id="list-wrap">
+        <ol id="list" class="list"></ol>
+        <div id="sentinel" class="sentinel" aria-hidden="true"></div>
+        <p id="list-end" class="status center" hidden></p>
+      </div>
+      <div id="map-wrap" class="map-wrap" hidden>
+        <div id="map" class="map" role="application" aria-label="Map of rated places"></div>
+        <button type="button" id="search-area" class="search-area" hidden>Search this area</button>
+        <div id="map-bar" class="map-bar"></div>
+        <div id="map-card" class="map-card" hidden>
+          <button type="button" id="map-card-close" class="map-card-close" aria-label="Close">×</button>
+          <ol class="list" id="map-card-list"></ol>
+        </div>
+      </div>
+    </section>
+
+    <!-- Detail view -->
+    <section id="view-detail" class="view" hidden></section>
+
+    <!-- Settings view -->
+    <section id="view-settings" class="view" hidden>
+      <h1>Settings</h1>
+
+      <details class="fold">
+        <summary><span>Places to show</span><span id="types-summary" class="fold-value"></span></summary>
+        <div class="fold-body" role="group" aria-label="Types of places to show">
+          <div class="type-actions">
+            <button type="button" class="chip" data-types="all">Select all</button>
+            <button type="button" class="chip" data-types="none">Clear all</button>
+            <button type="button" class="chip" data-types="food">Food &amp; drink only</button>
+          </div>
+          <div id="types"></div>
+        </div>
+      </details>
+
+      <details class="fold">
+        <summary><span>Distance units</span><span id="units-summary" class="fold-value"></span></summary>
+        <div class="fold-body" role="radiogroup" aria-label="Distance units">
+          <label class="row"><input type="radio" name="units" value="metric"> Metres and kilometres</label>
+          <label class="row"><input type="radio" name="units" value="imperial"> Feet and miles</label>
+        </div>
+      </details>
+
+      <details class="fold">
+        <summary>How ratings work</summary>
+        <div class="fold-body">
+          <p class="key-label">England, Wales and Northern Ireland</p>
+          <div class="scale" aria-hidden="true">
+            <span class="tile good r5"><span class="num">5</span></span>
+            <span class="tile good r4"><span class="num">4</span></span>
+            <span class="tile ok"><span class="num">3</span></span>
+            <span class="tile poor r2"><span class="num">2</span></span>
+            <span class="tile poor r1"><span class="num">1</span></span>
+            <span class="tile poor r0"><span class="num">0</span></span>
+          </div>
+          <p>Ratings run from <strong>5</strong> (very good) to <strong>0</strong> (urgent improvement necessary).
+            The detail page also shows the three areas inspected: food handling, the building and how food safety is managed.</p>
+          <p class="key-label">Scotland</p>
+          <div class="scale scale-scot" aria-hidden="true">
+            <span class="tile fhis-pass"><span class="word">Pass</span></span>
+            <span class="tile fhis-improve"><span class="word">Improve</span></span>
+          </div>
+          <p>Scotland uses its own scheme. <strong>Pass</strong> means the business met the legal requirements for food hygiene
+            when inspected; <strong>Improvement required</strong> means it did not. It isn't on the 0 to 5 scale, so it has its own colours.</p>
+          <p class="key-label">Everywhere</p>
+          <p>A rating shows how a business was doing on the day it was inspected: hygiene, the state of the premises and how
+            food safety is managed. It is not a guide to how good the food is. Ratings change after each inspection, so check the date.
+            <strong>Awaiting</strong> means not yet inspected; <strong>Exempt</strong> means the business doesn't need a rating.</p>
+        </div>
+      </details>
+
+      <details class="fold">
+        <summary>Tips</summary>
+        <div class="fold-body">
+        <ul class="tips">
+          <li>Switch between <strong>List</strong> and <strong>Map</strong> above the results.</li>
+          <li>Moved the map somewhere else? Tap <strong>Search this area</strong> to load the places you're looking at.</li>
+          <li>Zoom in to see places that share a spot one by one. A pin joined to a small dot by a thin line has been moved slightly so pins don't overlap; the dot marks where it is.</li>
+          <li>Some places are only located by their postcode, so their pin can be a street or so out.</li>
+          <li>Your phone's location can be 10–50&nbsp;m out in busy streets. If the place you're standing at isn't first in the list, look a few rows down or search by name.</li>
+          <li>Add the app to your home screen: on iPhone, tap Share then <strong>Add to Home Screen</strong>; on Android, open the browser menu (⋮) then <strong>Add to Home screen</strong>.</li>
+        </ul>
+        </div>
+      </details>
+
+      <details class="fold">
+        <summary>Data sources and licences</summary>
+        <div class="fold-body">
+        <p>Ratings come from the Food Standards Agency's
+          <a href="https://ratings.food.gov.uk/" target="_blank" rel="noopener">food hygiene ratings</a>
+          (Food Hygiene Rating Scheme and, in Scotland, Food Standards Scotland's Food Hygiene Information Scheme).
+          The data is used under the
+          <a href="https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/" target="_blank" rel="noopener">Open Government Licence v3.0</a>.
+          Contains public sector information licensed under the Open Government Licence v3.0.</p>
+        <p>Postcode search uses <a href="https://postcodes.io/" target="_blank" rel="noopener">postcodes.io</a>.
+          Contains OS data © Crown copyright and database right.
+          Contains Royal Mail data © Royal Mail copyright and database right.
+          Source: Office for National Statistics, licensed under the Open Government Licence v3.0.</p>
+        <p>The map uses <a href="https://leafletjs.com/" target="_blank" rel="noopener">Leaflet</a> and map data
+          © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors.
+          Where the FSA only gives a postcode, exact shop positions are matched from OpenStreetMap data,
+          available under the <a href="https://opendatacommons.org/licenses/odbl/" target="_blank" rel="noopener">Open Database Licence</a>.</p>
+        </div>
+      </details>
+
+      <p class="independent">ScoreOnTheDoor is an independent app. It is not affiliated with or endorsed by the Food Standards Agency.
+        Ratings reflect the day of inspection and are not a guide to food quality.</p>
+
+      <p id="tip" class="tip" hidden>
+        Find this useful? <a id="tip-link" href="#" target="_blank" rel="noopener">Buy me a coffee</a>
+      </p>
+    </section>
+  </main>
+
+  <script src="app.js" defer></script>
+</body>
+</html>
