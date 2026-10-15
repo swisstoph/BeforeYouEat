@@ -34,7 +34,7 @@ import osmium
 
 FSA_API = 'https://api.ratings.food.gov.uk'
 DEFAULT_OSM = 'https://download.geofabrik.de/europe/united-kingdom-latest.osm.pbf'
-USER_AGENT = 'ScoreOnTheDoor-positions/1.0 (hobby project; static build)'
+USER_AGENT = 'BeforeYouEat-positions/1.0 (hobby project; static build)'
 MAX_NAME_METRES = 250      # a name match must be this close to the FSA point
 MAX_ID_METRES = 1000       # sanity limit for fhrs:id matches (guards against mis-tagging)
 STOP_WORDS = {'the', 'ltd', 'limited', 'plc', 'and', 'co', 'uk', 'london', 't', 'a', 's'}

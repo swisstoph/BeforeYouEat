@@ -357,7 +357,7 @@ function updateListFooter() {
         ? 'No places found with that name.'
         : state.rawCount
           ? `No places within ${MAX_DISTANCE_MILES} miles match your settings.`
-          : `No rated places within ${MAX_DISTANCE_MILES} miles. ScoreOnTheDoor covers ${COVERAGE}.`;
+          : `No rated places within ${MAX_DISTANCE_MILES} miles. Before You Eat covers ${COVERAGE}.`;
   } else {
     endEl.textContent = state.query.kind === 'near'
       ? `That's everything within ${MAX_DISTANCE_MILES} miles.`
@@ -442,7 +442,7 @@ function locate() {
       if (!inUK(lat, lon)) {
         // Abroad: say so instead of an empty "nothing nearby" list. Searching still works.
         setStatus('You seem to be outside the UK');
-        state.message = `ScoreOnTheDoor covers ${esc(COVERAGE)}. Search a UK postcode or place name above to check ratings before you go.`;
+        state.message = `Before You Eat covers ${esc(COVERAGE)}. Search a UK postcode or place name above to check ratings before you go.`;
         updateListFooter();
         refreshMap();
         return;
@@ -553,7 +553,7 @@ function updateInstallTip() {
   if (!show) return;
   $('#install-btn').hidden = !installPrompt;
   $('#install-text').innerHTML = installPrompt
-    ? 'Add ScoreOnTheDoor to your home screen for one-tap access.'
+    ? 'Add Before You Eat to your home screen for one-tap access.'
     : isIOS()
       ? `Add it to your home screen: tap Share ${SHARE_ICON} then <strong>Add to Home Screen</strong>.`
       : 'Add it to your home screen from your browser menu (⋮ then <strong>Add to Home screen</strong>).';
