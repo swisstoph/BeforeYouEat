@@ -55,10 +55,24 @@ const RATINGS = {
 
 // Sub-score areas, named as on the FSA ratings site. Lower scores are better.
 const SCORE_AREAS = [
-  { key: 'Hygiene',                category: 'Hygiene',    name: 'Hygienic food handling' },
-  { key: 'Structural',             category: 'Structural', name: 'Cleanliness and condition of facilities and building' },
-  { key: 'ConfidenceInManagement', category: 'Confidence', name: 'Management of food safety' },
+  { key: 'Hygiene', category: 'Hygiene', name: 'Hygienic food handling',
+    about: 'How food is prepared, cooked, reheated, cooled and stored: safe temperatures, keeping raw and ready-to-eat food apart, and handwashing.' },
+  { key: 'Structural', category: 'Structural', name: 'Cleanliness and condition of facilities and building',
+    about: 'How clean the premises are, and their layout, repair, lighting, ventilation, handwashing facilities and pest control.' },
+  { key: 'ConfidenceInManagement', category: 'Confidence', name: 'Management of food safety',
+    about: 'Whether the business has a system, records and trained, supervised staff to keep food safe between inspections, and how it has dealt with problems before.' },
 ];
+
+// Shown, collapsed, under low ratings (0 to 2, or Improvement required in Scotland).
+function lowRatingNote(p) {
+  const fhrs = p.SchemeType !== 'FHIS';
+  return `<details class="finding-note">
+    <summary>What does a low rating mean?</summary>
+    <p>The inspector found things that need to improve${fhrs ? ': the lower the number, the more needs fixing, and the more urgently' : ''}.
+      It doesn't mean the food will make you ill. A business that is an immediate risk to health would be closed, not given a rating.</p>
+    <p>The council follows up low ratings. The business can fix the problems and ask to be re-inspected${fhrs ? ', appeal within 21 days, or publish a reply, which is shown on this page when there is one' : ''}.</p>
+  </details>`;
+}
 // Fallback when the ScoreDescriptors call is unavailable (offline).
 const SCORE_WORDS = {
   0: 'Very good', 5: 'Good', 10: 'Generally satisfactory', 15: 'Improvement necessary',
@@ -633,9 +647,13 @@ function renderDetail(p) {
       ${hasScores ? `
         <h2>Inspection findings</h2>
         <ul class="scores" id="scores">
-          ${SCORE_AREAS.map(a => `<li><span class="area">${esc(a.name)}</span>
-            <span class="verdict" data-area="${a.category}">${esc(SCORE_WORDS[p.scores[a.key]] ?? '—')}</span></li>`).join('')}
+          ${SCORE_AREAS.map(a => `<li><details>
+            <summary><span class="area">${esc(a.name)}</span>
+              <span class="verdict" data-area="${a.category}">${esc(SCORE_WORDS[p.scores[a.key]] ?? '—')}</span></summary>
+            <p>${esc(a.about)}</p>
+          </details></li>`).join('')}
         </ul>` : ''}
+      ${['0', '1', '2', 'Improvement Required'].includes(p.RatingValue) ? lowRatingNote(p) : ''}
 
       <dl class="facts">
         <dt>Address</dt>

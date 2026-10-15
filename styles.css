@@ -257,9 +257,27 @@ dl.facts dt { font-size: 14px; font-weight: 700; color: var(--muted); text-trans
 dl.facts dd { margin: 2px 0 0; }
 
 .scores { list-style: none; padding: 0; margin: 0 0 18px; border-top: 1px solid var(--line); }
-.scores li { display: flex; justify-content: space-between; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--line); }
+.scores li { border-bottom: 1px solid var(--line); }
+/* Area name, with the result underneath, and the chevron on the right */
+.scores summary {
+  display: grid; grid-template-columns: 1fr auto; column-gap: 10px; padding: 12px 0;
+  cursor: pointer; list-style: none;
+}
+.scores summary::after { grid-column: 2; grid-row: 1 / span 2; align-self: center; }
+.scores summary::-webkit-details-marker, .finding-note summary::-webkit-details-marker { display: none; }
 .scores .area { font-weight: 600; }
-.scores .verdict { text-align: right; }
+.scores .verdict { grid-column: 1; color: var(--muted); }
+/* Small chevron after each finding, turning when opened (same idea as the Settings sections) */
+.scores summary::after, .finding-note summary::after {
+  content: ''; flex: none; width: 8px; height: 8px; margin: 6px 2px 0 4px;
+  border-right: 2px solid var(--muted); border-bottom: 2px solid var(--muted);
+  transform: rotate(45deg);
+}
+.scores details[open] summary::after, .finding-note[open] summary::after { transform: rotate(-135deg); margin-top: 10px; }
+.scores details p { margin: -4px 0 12px; font-size: 15px; color: var(--muted); }
+.finding-note { margin: -6px 0 18px; padding: 0 12px; background: var(--surface); border-radius: var(--radius); }
+.finding-note summary { display: flex; align-items: center; justify-content: space-between; min-height: 46px; cursor: pointer; list-style: none; font-weight: 600; }
+.finding-note p { margin: 0 0 12px; font-size: 15px; }
 
 .actions { display: flex; flex-direction: column; gap: 10px; margin: 18px 0; }
 .actions .btn { display: flex; align-items: center; justify-content: center; text-decoration: none; }
@@ -300,6 +318,7 @@ dl.facts dd { margin: 2px 0 0; }
 .fold-body p { margin: 0 0 12px; }
 .key-label { font-size: 13px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); margin: 10px 0 6px !important; }
 .tips { margin: 0; padding-left: 20px; }
+.fold-body .tips { margin-bottom: 12px; }
 .tips li { margin-bottom: 8px; }
 .independent { margin: 20px 0 0; font-size: 14px; color: var(--muted); }
 
