@@ -1,0 +1,45 @@
+# Rebuilds positions/ (exact map positions matched from OpenStreetMap) once a month
+# and commits the result. Run it by hand from the Actions tab with "Run workflow".
+name: Refresh map positions
+
+on:
+  schedule:
+    - cron: '0 3 2 * *'   # 03:00 UTC on the 2nd of each month
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: positions
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: pip install -r tools/requirements.txt
+
+      - name: Build positions (whole UK)
+        run: python -u tools/build_positions.py --out positions
+
+      - name: Commit if changed
+        run: |
+          # index.json always gets a new build date, so only commit when a district file changed.
+          if git diff --quiet -- positions ':(exclude)positions/index.json' && [ -z "$(git ls-files --others --exclude-standard positions)" ]; then
+            echo "No position changes."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A positions
+          git commit -m "Refresh map positions from OpenStreetMap"
+          git push

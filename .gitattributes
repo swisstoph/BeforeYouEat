@@ -1,0 +1,4 @@
+# Keep LF line endings in the repo and on checkout (Windows and GitHub's Linux runners alike).
+* text=auto eol=lf
+*.png binary
+*.pbf binary
