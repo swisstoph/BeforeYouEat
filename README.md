@@ -1,4 +1,4 @@
-# ScoreOnTheDoor
+# Before You Eat
 
 A hobby PWA that shows UK food hygiene ratings for the places nearest to you: 0 to 5 in England, Wales and
 Northern Ireland, Pass / Improvement required in Scotland.
@@ -32,7 +32,7 @@ The app shows each place in its own scheme, so lists and maps near the border mi
 ## Run locally
 
 ```bash
-python -m http.server 8411 --directory Z:/ScoreOnTheDoor
+python -m http.server 8411 --directory .
 ```
 
 Then open http://localhost:8411. Location only works on `localhost` or `https://`.
