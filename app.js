@@ -3,7 +3,7 @@
 /* ---------- Config ---------- */
 
 // Set this to your Buy Me a Coffee / Ko-fi page. Leave empty to hide the link.
-const TIP_URL = 'https://ko-fi.com/scoreonthedoor';
+const TIP_URL = 'https://ko-fi.com/beforeyoueat';
 
 const API = 'https://api.ratings.food.gov.uk';
 const POSTCODES_API = 'https://api.postcodes.io';
