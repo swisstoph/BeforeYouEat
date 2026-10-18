@@ -32,7 +32,9 @@ jobs:
         run: python -u tools/build_positions.py --out positions
 
       - name: Build cuisines (OpenStreetMap, Overture Maps, names)
-        # If this fails the old cuisines stay, and the new positions are still committed.
+        # If this fails the old cuisines stay, the new positions are still committed, and the last step
+        # marks the run as failed so GitHub sends a failure email.
+        id: cuisine
         continue-on-error: true
         run: python -u tools/build_cuisine.py --out cuisine
 
@@ -49,3 +51,9 @@ jobs:
           git commit -m "Refresh map positions and cuisines"
           git pull --rebase origin main
           git push
+
+      - name: Fail the run if the cuisine build failed
+        if: steps.cuisine.outcome == 'failure'
+        run: |
+          echo "The cuisine build failed; the previous cuisines were kept. See the 'Build cuisines' step above."
+          exit 1
