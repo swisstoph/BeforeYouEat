@@ -738,7 +738,6 @@ async function loadBetterNearby(p) {
   if (!isFinite(lat) || !isFinite(lon)) return;
   const mine = ratingRank(p);
   const here = { lat, lon };
-  const kind = (p.BusinessType || 'places').toLowerCase();
   const fetched = new Map();   // radius -> higher-rated places of the same type
 
   async function higherRated(radius) {
@@ -778,13 +777,13 @@ async function loadBetterNearby(p) {
         </div></div>` : '';
     let body;
     if (!found.length) {
-      const what = mode === 'same' ? `${cuisine} places of this type (${kind})` : `places of this type (${kind})`;
+      const what = mode === 'same' ? `${cuisine} places of this type` : 'places of this type';
       body = `<p class="small">No higher-rated ${esc(what)} within about ${esc(formatDistance(radius * 1609.344))}.</p>`;
     } else {
       found.sort((a, b) => ratingRank(b) - ratingRank(a) || distanceMetres(a, here) - distanceMetres(b, here));
       const top = found.slice(0, BETTER_LIMIT);
       rememberPlaces(top);
-      const note = `Same type of place (${esc(kind)}), best rated first; distances from this place. `
+      const note = 'Same type of place, best rated first; distances from this place. '
         + (mode === 'same'
           ? 'Chosen only by hygiene rating, distance and cuisine (from map data, so occasionally wrong), not a recommendation.'
           : 'Chosen only by hygiene rating and distance, not a recommendation.');
