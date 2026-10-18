@@ -353,6 +353,11 @@ dl.facts dd { margin: 2px 0 0; }
 .tip-btn:hover { border-color: var(--muted); }
 
 /* Higher-rated places nearby (detail page) */
-#better h2 { margin-top: 20px; }
-.better-list { margin: 0 0 18px; border-top: 1px solid var(--line); }
-.better-toggle { margin: 0 0 10px; }
+.better { margin: 18px 0 8px; padding: 14px 14px 4px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
+.better h2 { margin: 0 0 10px; }
+.better .small { margin: 0 0 8px; }
+.better-choice { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin: 0 0 10px; }
+.better-choice-label { font-size: 14px; font-weight: 600; }
+.better-choice .toggle { background: var(--bg); }
+.better-list { margin: 0; border-top: 1px solid var(--line); }
+.better-list li:last-child .row-link { border-bottom: 0; }

@@ -771,10 +771,11 @@ async function loadBetterNearby(p) {
       }
     } catch { return; } // suggestions are a nice-to-have: stay quiet if the FSA can't be reached
     if (parseRoute().id !== String(p.FHRSID)) return;
-    const toggle = cuisine ? `<div class="toggle better-toggle" role="group" aria-label="Which places to suggest">
-        <button type="button" data-better="same" aria-pressed="${mode === 'same'}">Same cuisine</button>
-        <button type="button" data-better="any" aria-pressed="${mode === 'any'}">Any cuisine</button>
-      </div>` : '';
+    const toggle = cuisine ? `<div class="better-choice"><span class="better-choice-label">Show</span>
+        <div class="toggle" role="group" aria-label="Which places to suggest">
+          <button type="button" data-better="same" aria-pressed="${mode === 'same'}">${esc(cuisine[0].toUpperCase() + cuisine.slice(1))} only</button>
+          <button type="button" data-better="any" aria-pressed="${mode === 'any'}">Any cuisine</button>
+        </div></div>` : '';
     let body;
     if (!found.length) {
       const what = mode === 'same' ? `${cuisine} places of this type (${kind})` : `places of this type (${kind})`;
@@ -783,13 +784,12 @@ async function loadBetterNearby(p) {
       found.sort((a, b) => ratingRank(b) - ratingRank(a) || distanceMetres(a, here) - distanceMetres(b, here));
       const top = found.slice(0, BETTER_LIMIT);
       rememberPlaces(top);
-      const note = mode === 'same'
-        ? `${esc(cuisine[0].toUpperCase() + cuisine.slice(1))} places of the same type (${esc(kind)}), best rated first.
-           Cuisines come from map data and business names, so a few may be wrong. Distances are from this place.`
-        : `The same type of place (${esc(kind)}), best rated first. Distances are from this place.`;
+      const note = `The same type of place (${esc(kind)}), best rated first. Distances are from this place.`
+        + (mode === 'same' ? ' Cuisines come from map data and business names, so a few may be wrong.' : '');
       body = `<p class="small">${note}</p><ol class="list better-list">${top.map(q => rowHtml(q, here)).join('')}</ol>`;
     }
     box.innerHTML = `<h2>Higher-rated places nearby</h2>${toggle}${body}`;
+    box.hidden = false;
     for (const b of box.querySelectorAll('[data-better]')) {
       b.addEventListener('click', () => {
         if (b.dataset.better === mode) return;
@@ -877,6 +877,7 @@ function renderDetail(p) {
       ${p.SchemeType === 'FHIS' ? `<p class="notice">Scotland uses the Food Hygiene Information Scheme instead of 0 to 5 ratings.
         <strong>Pass</strong> means the business met the legal requirements for food hygiene when it was inspected;
         <strong>Improvement required</strong> means it did not.</p>` : ''}
+      <section id="better" class="better" aria-label="Higher-rated places nearby" hidden></section>
 
       ${hasScores ? `
         <h2>Inspection findings</h2>
@@ -888,7 +889,6 @@ function renderDetail(p) {
           </details></li>`).join('')}
         </ul>` : ''}
       ${['0', '1', '2', 'Improvement Required'].includes(p.RatingValue) ? lowRatingNote(p) : ''}
-      <div id="better"></div>
       <div id="history"></div>
 
       <dl class="facts">
