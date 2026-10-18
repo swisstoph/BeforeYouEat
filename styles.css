@@ -289,8 +289,6 @@ dl.facts dd { margin: 2px 0 0; }
 .scale { display: flex; gap: 6px; margin: 0 0 16px; }
 .scale .tile { width: auto; flex: 1; min-height: 0; aspect-ratio: 1; padding: 0; }
 .scale .tile .num { font-size: 28px; }
-.points { margin: 0 0 8px; padding-left: 20px; }
-.points li { margin-bottom: 6px; }
 .or { text-align: center; color: var(--muted); margin: 8px 0; }
 .btn.wide { width: 100%; }
 .welcome .small { margin: 12px 0 0; }
