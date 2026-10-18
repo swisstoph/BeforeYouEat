@@ -630,6 +630,57 @@ async function showDetail(id) {
   if (parseRoute().id !== String(id)) return; // user has moved on
   renderDetail(p);
   loadScoreWords(p);
+  loadHistory(p);
+}
+
+/* ---------- Rating history ----------
+   The FSA only publishes each place's current rating, so tools/record_history.py records
+   ratings weekly into history/<DISTRICT>.json. Shown on the detail page once a place has
+   more than one entry. */
+
+let historyIndex = null;                    // Promise of { version, started, districts: Set }
+const historyDistricts = new Map();         // district -> Promise of { FHRSID: [[rating, date], ...] }
+
+function getHistoryIndex() {
+  historyIndex ??= fetch('history/index.json', { cache: 'no-cache' })
+    .then(res => (res.ok ? res.json() : null))
+    .then(ix => (ix ? { version: ix.version, started: ix.started, districts: new Set(ix.districts || []) } : null))
+    .catch(() => null);
+  return historyIndex;
+}
+
+async function historyFor(p) {
+  const ix = await getHistoryIndex();
+  const d = districtOf(p.PostCode);
+  if (!ix || !d || !ix.districts.has(d)) return null;
+  if (!historyDistricts.has(d)) {
+    historyDistricts.set(d, fetch(`history/${d}.json?v=${ix.version}`)
+      .then(res => (res.ok ? res.json() : {}))
+      .catch(() => { historyDistricts.delete(d); return {}; }));
+  }
+  const entries = ((await historyDistricts.get(d))[String(p.FHRSID)] || []).slice();
+  // The live FSA data can already have a newer inspection than the last weekly recording.
+  const now = [String(p.RatingValue), String(p.RatingDate || '').slice(0, 10)];
+  const last = entries[entries.length - 1];
+  if (!last || last[0] !== now[0] || last[1] !== now[1]) entries.push(now);
+  return { started: ix.started, entries };
+}
+
+async function loadHistory(p) {
+  const h = await historyFor(p);
+  const box = detailEl.querySelector('#history');
+  if (!box || !h || h.entries.length < 2 || parseRoute().id !== String(p.FHRSID)) return;
+  const rows = h.entries.slice().reverse().map(([rating, date], i) => {
+    const q = { RatingValue: rating, RatingDate: date };
+    const when = inspectionDate(q);
+    return `<li><div class="tile-wrap tile-sm">${tileHtml(q)}</div>
+      <div><strong>${esc(ratingOf(q).label)}</strong>
+        <div class="history-date">${when ? `Inspected ${esc(when)}` : 'No inspection date'}${i === 0 ? ' · current' : ''}</div></div></li>`;
+  }).join('');
+  const since = new Date(h.started).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+  box.innerHTML = `<h2>Rating history</h2><ul class="history">${rows}</ul>
+    <p class="small">Recorded by Before You Eat since ${esc(since)}. The FSA only publishes the current rating,
+      so earlier ratings aren't available. A new owner usually gets a new record, so their history starts again.</p>`;
 }
 
 function renderDetail(p) {
@@ -668,6 +719,7 @@ function renderDetail(p) {
           </details></li>`).join('')}
         </ul>` : ''}
       ${['0', '1', '2', 'Improvement Required'].includes(p.RatingValue) ? lowRatingNote(p) : ''}
+      <div id="history"></div>
 
       <dl class="facts">
         <dt>Address</dt>

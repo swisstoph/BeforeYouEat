@@ -295,6 +295,16 @@ dl.facts dd { margin: 2px 0 0; }
 .btn.wide { width: 100%; }
 .welcome .small { margin: 12px 0 0; }
 
+/* Rating history on the detail page */
+.history { list-style: none; padding: 0; margin: 0 0 8px; border-top: 1px solid var(--line); }
+.history li { display: flex; align-items: center; gap: 14px; padding: 10px 0; border-bottom: 1px solid var(--line); }
+.tile-sm { width: 52px; }
+.tile-sm .tile { width: 52px; min-height: 52px; padding: 0; }
+.tile-sm .tile .num { font-size: 28px; }
+.tile-sm .tile .word { font-size: 10.5px; letter-spacing: -0.01em; }
+.tile-sm .tile .label { display: none; }   /* the label is shown beside the small tile */
+.history-date { color: var(--muted); font-size: 15px; }
+
 /* Settings */
 .row { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--line); }
 .row input { width: 22px; height: 22px; flex: none; accent-color: var(--text); }

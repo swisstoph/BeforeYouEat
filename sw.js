@@ -1,5 +1,5 @@
 // Bump this when you deploy changed files so phones pick up the new version.
-const VERSION = 'sotd-v30';
+const VERSION = 'sotd-v32';
 const SHELL = [
   './',
   'index.html',
@@ -33,7 +33,12 @@ self.addEventListener('fetch', event => {
   event.respondWith(
     caches.open(VERSION).then(async cache => {
       try {
-        const res = await fetch(event.request, { cache: 'no-cache' });
+        // Page loads ("navigate" requests) can't be copied with extra options, so fetch them by URL.
+        // Getting this wrong made page loads fall back to the cached copy, delaying updates.
+        const fresh = event.request.mode === 'navigate'
+          ? new Request(event.request.url, { cache: 'no-cache', credentials: 'same-origin' })
+          : new Request(event.request, { cache: 'no-cache' });
+        const res = await fetch(fresh);
         if (res.ok) cache.put(event.request, res.clone());
         return res;
       } catch {
