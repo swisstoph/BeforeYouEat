@@ -34,13 +34,13 @@ jobs:
       - name: Commit if changed
         run: |
           # index.json always gets a new build date, so only commit when a district file changed.
-          if git diff --quiet -- positions ':(exclude)positions/index.json' && [ -z "$(git ls-files --others --exclude-standard positions)" ]; then
+          if git diff --quiet -- positions cuisine ':(exclude)positions/index.json' ':(exclude)cuisine/index.json' && [ -z "$(git ls-files --others --exclude-standard positions cuisine)" ]; then
             echo "No position changes."
             exit 0
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -A positions
-          git commit -m "Refresh map positions from OpenStreetMap"
+          git add -A positions cuisine
+          git commit -m "Refresh map positions and cuisines from OpenStreetMap"
           git pull --rebase origin main
           git push

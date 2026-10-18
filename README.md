@@ -28,6 +28,8 @@ The app shows each place in its own scheme, so lists and maps near the border mi
 - `tools/build_positions.py`: builds `positions/`
 - `.github/workflows/positions.yml`: monthly GitHub Action that rebuilds `positions/`
 - `history/`, `tools/record_history.py`, `.github/workflows/history.yml`: weekly rating history (see below)
+- `cuisine/`: OpenStreetMap cuisine tags for matched places, written by `build_positions.py` (`cuisine/index.json`
+  has the coverage per business type)
 - `vendor/leaflet/`: map library
 
 ## Run locally
