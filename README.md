@@ -93,7 +93,9 @@ to publish if the Overture download looks incomplete or coverage drops or jumps 
 
 The app uses it for "Same cuisine" under Higher-rated places nearby (shown for ratings 0-2). `CUISINE_GROUPS` in
 `app.js` treats similar values as one cuisine (cafe and coffee_shop, pizza and pizzeria) and leaves out values that
-don't describe the food. Places without a known cuisine just get the any-cuisine list. Suggestions are chosen only
+don't describe the food. `CUISINE_FAMILIES` links similar cuisines (dessert, bakery and café; the fast-food
+family; East Asian; and so on): when no higher-rated place with the same cuisine is nearby, similar ones are shown
+instead, and the app says so. Places without a known cuisine just get the any-cuisine list. Suggestions are chosen only
 by hygiene rating, distance and cuisine; they are not recommendations, and the app says so on screen and in Settings.
 
 Cuisine data © OpenStreetMap contributors (Open Database Licence) and Overture Maps: data from Meta and Microsoft

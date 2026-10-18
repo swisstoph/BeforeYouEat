@@ -670,13 +670,52 @@ const CUISINE_GROUPS = {
   'Asian': ['asian', 'oriental', 'asian_fusion', 'noodle'],
   'British': ['british', 'english'],
   'juice': ['smoothie_juice_bar', 'juice'],
+  'vegetarian': ['vegetarian', 'vegan'],
+  'salad': ['salad', 'salad_bar', 'healthy', 'health_food', 'poke'],
+  'chocolate': ['chocolatier', 'chocolate', 'candy_store', 'candy', 'confectionery'],
+  'pie': ['pie', 'pie_and_mash', 'pasty'],
+  'Afghan': ['afghan', 'afghani'],
+  'Argentinian': ['argentinian', 'argentine'],
+  'Irish': ['irish', 'irish_pub'],
+  'hot dog': ['hot_dog', 'sausage', 'fries'],
 };
+
+// Cuisines close enough to suggest when there's no higher-rated place with the same one nearby.
+// A cuisine can be in several families; its similar cuisines are all the others in its families.
+const CUISINE_FAMILIES = [
+  ['dessert', 'bakery', 'café', 'bubble tea', 'chocolate', 'juice'],              // sweet things and treats
+  ['café', 'bakery', 'sandwich', 'salad', 'juice'],                               // cafés and light bites
+  ['burger', 'chicken', 'kebab', 'pizza', 'fish and chips', 'hot dog'],           // fast food
+  ['pizza', 'Italian'],
+  ['fish and chips', 'seafood', 'pie', 'British'],
+  ['British', 'Irish', 'Scottish', 'pie', 'steak'],
+  ['steak', 'burger', 'barbecue', 'American'],
+  ['Chinese', 'Japanese', 'Korean', 'Thai', 'Vietnamese', 'Asian', 'Malaysian', 'Indonesian', 'Filipino', 'Taiwanese',
+    'indo chinese'],                                                               // East and Southeast Asian
+  ['Japanese', 'seafood'],
+  ['Indian', 'Nepalese', 'Sri Lankan', 'Afghan', 'indo chinese'],                 // South Asian
+  ['Turkish', 'Middle Eastern', 'Persian', 'Kurdish', 'kebab', 'falafel', 'Greek', 'Afghan', 'Moroccan'],
+  ['Greek', 'Italian', 'Spanish', 'Mediterranean', 'Turkish', 'Portuguese', 'French', 'Middle Eastern'],
+  ['Mexican', 'Brazilian', 'Argentinian', 'Cuban', 'Peruvian', 'Latin American', 'colombian', 'Caribbean'],
+  ['Caribbean', 'African', 'Nigerian', 'Ethiopian', 'Ghanaian', 'Somali'],
+  ['Polish', 'Romanian', 'Eastern European', 'Ukrainian', 'Georgian', 'Hungarian', 'German'],
+  ['vegetarian', 'salad', 'falafel'],
+];
+
+function relatedGroups(groups) {
+  const out = new Set();
+  for (const family of CUISINE_FAMILIES) {
+    if (groups.some(g => family.includes(g))) for (const g of family) out.add(g);
+  }
+  for (const g of groups) out.delete(g);
+  return out;
+}
 const NOT_A_CUISINE = new Set(['regional', 'local', 'international', 'european', 'lunch', 'comfort_food', 'fine_dining',
   'theme', 'pub', 'bistro', 'diner', 'halal', 'gay_bar', 'dive_bar', 'hookah_bar', 'winery', 'distillery', 'beer_garden',
-  'whiskey_bar', 'grill', 'buffet']);
+  'whiskey_bar', 'grill', 'buffet', 'airport_lounge', 'kosher']);
 const CUISINE_GROUP_OF = new Map(Object.entries(CUISINE_GROUPS).flatMap(([name, values]) => values.map(v => [v, name])));
 // Values named after a country or region get a capital letter ("Thai", "Sri Lankan").
-const PROPER_CUISINES = /^(african|american|argentinian|brazilian|cuban|ethiopian|filipino|french|german|greek|indonesian|irish|korean|kurdish|malaysian|moroccan|nepalese|nigerian|persian|polish|portuguese|romanian|scottish|sri lankan|taiwanese|thai|turkish|vietnamese|afghan|afghani|latin american|eastern european|mediterranean|peruvian|russian|ukrainian|georgian|hungarian|iranian|iraqi|egyptian|somali|ghanaian|welsh)$/;
+const PROPER_CUISINES = /^(african|american|argentinian|brazilian|cuban|ethiopian|filipino|french|german|greek|indonesian|irish|korean|kurdish|malaysian|moroccan|nepalese|nigerian|persian|polish|portuguese|romanian|scottish|sri lankan|taiwanese|thai|turkish|vietnamese|afghan|afghani|latin american|eastern european|mediterranean|peruvian|russian|ukrainian|georgian|hungarian|iranian|iraqi|egyptian|somali|ghanaian|welsh|colombian)$/;
 
 // Cuisine groups of a recorded value, e.g. 'italian;pizza' -> ['Italian', 'pizza'].
 function cuisineGroups(value) {
@@ -725,6 +764,10 @@ async function cuisinesFor(list) {
   return out;
 }
 
+function joinAnd(words) {
+  return words.length > 1 ? `${words.slice(0, -1).join(', ')} and ${words[words.length - 1]}` : words[0];
+}
+
 function ratingRank(p) {
   if (p.SchemeType === 'FHIS') return { 'Pass': 2, 'Pass and Eat Safe': 2, 'Improvement Required': 1 }[p.RatingValue] ?? null;
   const n = Number(p.RatingValue);
@@ -756,34 +799,45 @@ async function loadBetterNearby(p) {
   let groups = [];
   try { groups = ((await cuisinesFor([p])).get(String(p.FHRSID)) || []).slice(0, 2); } catch { /* no cuisine data */ }
   const cuisine = groups.join(' or ');   // e.g. "Italian or pizza" (the first two recorded)
+  const similar = relatedGroups(groups);
+  const capital = t => t[0].toUpperCase() + t.slice(1);
 
+  // In "same" mode: the same cuisine nearby, else similar cuisines nearby, before searching further out.
   async function render(mode) {
-    let found = [], radius = 0;
+    let found = [], radius = 0, cuisineOf = () => [], fellBack = false;
     try {
       for (radius of BETTER_RADII_MILES) {
         found = await higherRated(radius);
         if (mode === 'same' && found.length) {
           const known = await cuisinesFor(found);
-          found = found.filter(q => (known.get(String(q.FHRSID)) || []).some(g => groups.includes(g)));
+          cuisineOf = q => known.get(String(q.FHRSID)) || [];
+          const same = found.filter(q => cuisineOf(q).some(g => groups.includes(g)));
+          fellBack = !same.length;
+          found = same.length ? same : found.filter(q => cuisineOf(q).some(g => similar.has(g)));
         }
         if (found.length) break;
       }
     } catch { return; } // suggestions are a nice-to-have: stay quiet if the FSA can't be reached
     if (parseRoute().id !== String(p.FHRSID)) return;
+    const sameLabel = groups.length > 1 ? `${capital(groups[0])}, ${groups[1]}` : capital(cuisine);
     const toggle = cuisine ? `<div class="better-choice"><span class="better-choice-label">Show</span>
         <div class="toggle" role="group" aria-label="Which places to suggest">
-          <button type="button" data-better="same" aria-pressed="${mode === 'same'}">${esc(cuisine[0].toUpperCase() + cuisine.slice(1))} only</button>
+          <button type="button" data-better="same" aria-pressed="${mode === 'same'}">${esc(sameLabel)}${similar.size ? ' or similar' : ' only'}</button>
           <button type="button" data-better="any" aria-pressed="${mode === 'any'}">Any cuisine</button>
         </div></div>` : '';
     let body;
     if (!found.length) {
-      const what = mode === 'same' ? `${cuisine} places of this type` : 'places of this type';
+      const what = mode === 'same' ? `${cuisine}${similar.size ? ' or similar' : ''} places of this type` : 'places of this type';
       body = `<p class="small">No higher-rated ${esc(what)} within about ${esc(formatDistance(radius * 1609.344))}.</p>`;
     } else {
       found.sort((a, b) => ratingRank(b) - ratingRank(a) || distanceMetres(a, here) - distanceMetres(b, here));
       const top = found.slice(0, BETTER_LIMIT);
       rememberPlaces(top);
-      const note = 'Same type of place, best rated first; distances from this place. '
+      const kinds = [...new Set(top.flatMap(q => cuisineOf(q).filter(g => similar.has(g))))];
+      const fallback = mode === 'same' && fellBack
+        ? `No higher-rated ${esc(cuisine)} places within about ${esc(formatDistance(radius * 1609.344))}, so these are similar: ${esc(joinAnd(kinds))}. `
+        : '';
+      const note = fallback + 'Same type of place, best rated first; distances from this place. '
         + (mode === 'same'
           ? 'Chosen only by hygiene rating, distance and cuisine (from map data, so occasionally wrong), not a recommendation.'
           : 'Chosen only by hygiene rating and distance, not a recommendation.');
