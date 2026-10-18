@@ -237,6 +237,8 @@ def main():
         before = None
     if before and total < 0.9 * before:
         problems.append(f'Places with a cuisine dropped from {before:,} to {total:,} (more than 10%).')
+    if before and total > 1.2 * before:
+        problems.append(f'Places with a cuisine jumped from {before:,} to {total:,} (more than 20%).')
     if problems and not args.force:
         report_cuisine(summary, problems)
         print('Not publishing: the existing cuisines are left unchanged.')

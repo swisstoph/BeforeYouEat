@@ -25,6 +25,7 @@ from build_positions import district, get_fsa_places  # noqa: E402  (shared FSA 
 
 MIN_PLACES = 300_000        # a full UK download has over 450,000 places
 MAX_CHANGED_SHARE = 0.30    # more changes than this in one run suggests broken data, not inspections
+MAX_NEW_SHARE = 0.20        # likewise for places that are new since the last run
 
 
 def main():
@@ -79,6 +80,13 @@ def main():
         problems.append(f'Only {stats["places"]:,} FSA places were read (expected over {MIN_PLACES:,}).')
     if known and stats['changed'] > MAX_CHANGED_SHARE * known:
         problems.append(f'{stats["changed"]:,} of {known:,} known places changed in one run, which looks like a data problem.')
+    if known and stats['new'] > MAX_NEW_SHARE * known:
+        problems.append(f'{stats["new"]:,} new places in one run (on top of {known:,} known), which looks like a data problem.')
+    before = (index.get('stats') or {}).get('places')
+    if before and stats['places'] < 0.9 * before:
+        problems.append(f'FSA places dropped from {before:,} to {stats["places"]:,} since the last run (more than 10%).')
+    if before and stats['places'] > 1.2 * before:
+        problems.append(f'FSA places jumped from {before:,} to {stats["places"]:,} since the last run (more than 20%).')
     report(summary, problems)
     if problems and not args.force:
         print('Not saving: the existing history is left unchanged.')

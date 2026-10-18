@@ -353,7 +353,9 @@ def sanity_check(stats, previous, full_build):
         for key, label in (('places', 'FSA places'), ('exact', 'exact positions'), ('districts', 'district files')):
             before, now = previous.get(key), stats[key]
             if before and now < 0.9 * before:
-                problems.append(f'{label.capitalize()} dropped from {before:,} to {now:,} (more than 10%).')
+                problems.append(f'{label[0].upper() + label[1:]} dropped from {before:,} to {now:,} (more than 10%).')
+            if before and now > 1.2 * before:
+                problems.append(f'{label[0].upper() + label[1:]} jumped from {before:,} to {now:,} (more than 20%).')
     return problems
 
 
