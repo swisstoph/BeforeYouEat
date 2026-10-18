@@ -355,3 +355,4 @@ dl.facts dd { margin: 2px 0 0; }
 /* Higher-rated places nearby (detail page) */
 #better h2 { margin-top: 20px; }
 .better-list { margin: 0 0 18px; border-top: 1px solid var(--line); }
+.better-toggle { margin: 0 0 10px; }

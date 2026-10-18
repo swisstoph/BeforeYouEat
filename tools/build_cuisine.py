@@ -4,7 +4,7 @@
     2. Overture Maps: the category of a place with a similar name at the same postcode, or within 150 m
     3. Name: clear words or well-known chains in the business name ("Pizza", "Tandoori", "Greggs")
 
-Output (read later by the app):
+Output (read by the app for "Same cuisine" in higher-rated suggestions):
     cuisine/index.json         version, sources, coverage, list of postcode districts
     cuisine/<DISTRICT>.json    {"<FHRSID>": ["italian;pizza", "osm"], ...}   source is osm, overture or name
 

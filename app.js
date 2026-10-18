@@ -637,10 +637,93 @@ async function showDetail(id) {
 
 /* ---------- Higher-rated places nearby ----------
    For low ratings (0-2, or Scotland's Improvement required): up to 5 places of the same type
-   of business, on the same scheme, rated higher, best first then nearest. */
+   of business, on the same scheme, rated higher, best first then nearest. When the place's
+   cuisine is known (cuisine/<DISTRICT>.json, built by tools/build_cuisine.py), the list can
+   be narrowed to places with the same cuisine. */
 
 const BETTER_LIMIT = 5;
 const BETTER_RADII_MILES = [0.3, 1];   // about 500 m first, widening to about 1.5 km if needed
+
+// Cuisine values that count as the same thing, and how to name them. Anything else is its own
+// group, named from its value. Values that don't describe the food are left out.
+const CUISINE_GROUPS = {
+  'café': ['coffee_shop', 'cafe', 'tea_room', 'coffee', 'tea', 'tea_shop', 'breakfast', 'breakfast_and_brunch', 'brunch'],
+  'pizza': ['pizza', 'italian_pizza', 'pizzeria'],
+  'Italian': ['italian', 'pasta'],
+  'Indian': ['indian', 'curry', 'bangladeshi', 'pakistani', 'balti', 'tandoori'],
+  'Chinese': ['chinese', 'cantonese', 'szechuan', 'dim_sum'],
+  'fish and chips': ['fish_and_chips', 'fish_and_chips_shop', 'fish', 'chip_shop'],
+  'burger': ['burger', 'burger_joint'],
+  'sandwich': ['sandwich', 'sandwich_shop', 'sandwich_spot', 'bagel', 'bagel_shop', 'deli', 'delicatessen'],
+  'bakery': ['bakery', 'cake', 'pastry', 'cupcake_shop', 'patisserie', 'donut', 'donut_shop'],
+  'chicken': ['chicken', 'fried_chicken', 'wings', 'chicken_wings', 'peri_peri'],
+  'kebab': ['kebab', 'doner_kebab', 'shawarma'],
+  'Japanese': ['japanese', 'sushi', 'ramen'],
+  'dessert': ['ice_cream', 'ice_cream_shop', 'gelato_shop', 'dessert', 'dessert_shop', 'frozen_yogurt', 'waffle',
+    'crepe', 'pancake', 'pancake_house', 'milkshake'],
+  'steak': ['steakhouse', 'steak_house', 'steak'],
+  'bubble tea': ['bubble_tea', 'bubble_tea_shop'],
+  'Caribbean': ['caribbean', 'jamaican'],
+  'Mexican': ['mexican', 'tex-mex', 'taco'],
+  'Spanish': ['spanish', 'tapas', 'tapas_bar'],
+  'Middle Eastern': ['lebanese', 'middle_eastern', 'syrian', 'arab'],
+  'Asian': ['asian', 'oriental', 'asian_fusion', 'noodle'],
+  'British': ['british', 'english'],
+  'juice': ['smoothie_juice_bar', 'juice'],
+};
+const NOT_A_CUISINE = new Set(['regional', 'local', 'international', 'european', 'lunch', 'comfort_food', 'fine_dining',
+  'theme', 'pub', 'bistro', 'diner', 'halal', 'gay_bar', 'dive_bar', 'hookah_bar', 'winery', 'distillery', 'beer_garden',
+  'whiskey_bar', 'grill', 'buffet']);
+const CUISINE_GROUP_OF = new Map(Object.entries(CUISINE_GROUPS).flatMap(([name, values]) => values.map(v => [v, name])));
+// Values named after a country or region get a capital letter ("Thai", "Sri Lankan").
+const PROPER_CUISINES = /^(african|american|argentinian|brazilian|cuban|ethiopian|filipino|french|german|greek|indonesian|irish|korean|kurdish|malaysian|moroccan|nepalese|nigerian|persian|polish|portuguese|romanian|scottish|sri lankan|taiwanese|thai|turkish|vietnamese|afghan|afghani|latin american|eastern european|mediterranean|peruvian|russian|ukrainian|georgian|hungarian|iranian|iraqi|egyptian|somali|ghanaian|welsh)$/;
+
+// Cuisine groups of a recorded value, e.g. 'italian;pizza' -> ['Italian', 'pizza'].
+function cuisineGroups(value) {
+  const out = [];
+  for (const v of String(value || '').split(';')) {
+    if (!v || NOT_A_CUISINE.has(v)) continue;
+    let name = CUISINE_GROUP_OF.get(v);
+    if (!name) {
+      name = v.replace(/_/g, ' ');
+      if (PROPER_CUISINES.test(name)) name = name.replace(/\b\w/g, c => c.toUpperCase());
+    }
+    if (!out.includes(name)) out.push(name);
+  }
+  return out;
+}
+
+let cuisineIndex = null;                    // Promise of { version, districts: Set }
+const cuisineDistricts = new Map();         // district -> Promise of { FHRSID: [cuisine, source] }
+
+function getCuisineIndex() {
+  cuisineIndex ??= fetch('cuisine/index.json', { cache: 'no-cache' })
+    .then(res => (res.ok ? res.json() : null))
+    .then(ix => (ix ? { version: ix.version, districts: new Set(ix.districts || []) } : null))
+    .catch(() => null);
+  return cuisineIndex;
+}
+
+// Resolves to a Map FHRSID -> cuisine groups for the given places (places without one are left out).
+async function cuisinesFor(list) {
+  const ix = await getCuisineIndex();
+  const out = new Map();
+  if (!ix) return out;
+  const wanted = [...new Set(list.map(p => districtOf(p.PostCode)))].filter(d => d && ix.districts.has(d));
+  for (const d of wanted) {
+    if (!cuisineDistricts.has(d)) {
+      cuisineDistricts.set(d, fetch(`cuisine/${d}.json?v=${ix.version}`)
+        .then(res => (res.ok ? res.json() : {}))
+        .catch(() => { cuisineDistricts.delete(d); return {}; }));
+    }
+  }
+  const all = Object.assign({}, ...await Promise.all(wanted.map(d => cuisineDistricts.get(d))));
+  for (const p of list) {
+    const groups = cuisineGroups(all[String(p.FHRSID)]?.[0]);
+    if (groups.length) out.set(String(p.FHRSID), groups);
+  }
+  return out;
+}
 
 function ratingRank(p) {
   if (p.SchemeType === 'FHIS') return { 'Pass': 2, 'Pass and Eat Safe': 2, 'Improvement Required': 1 }[p.RatingValue] ?? null;
@@ -655,32 +738,68 @@ async function loadBetterNearby(p) {
   if (!isFinite(lat) || !isFinite(lon)) return;
   const mine = ratingRank(p);
   const here = { lat, lon };
-  let found = [], radius = 0;
-  try {
-    for (radius of BETTER_RADII_MILES) {
+  const kind = (p.BusinessType || 'places').toLowerCase();
+  const fetched = new Map();   // radius -> higher-rated places of the same type
+
+  async function higherRated(radius) {
+    if (!fetched.has(radius)) {
       const data = await api('/Establishments', {
         latitude: lat, longitude: lon, maxDistanceLimit: radius, sortOptionKey: 'distance',
-        businessTypeId: p.BusinessTypeID, pageSize: 100,
+        businessTypeId: p.BusinessTypeID, pageSize: radius > 0.5 ? 200 : 100,
       });
-      found = (data.establishments || []).filter(q => String(q.FHRSID) !== String(p.FHRSID)
+      fetched.set(radius, (data.establishments || []).filter(q => String(q.FHRSID) !== String(p.FHRSID)
         && (q.SchemeType || 'FHRS') === (p.SchemeType || 'FHRS')
-        && ratingRank(q) != null && ratingRank(q) > mine);
-      if (found.length) break;
+        && ratingRank(q) != null && ratingRank(q) > mine));
     }
-  } catch { return; } // suggestions are a nice-to-have: stay quiet if the FSA can't be reached
-  if (parseRoute().id !== String(p.FHRSID)) return;
-  const kind = (p.BusinessType || 'places').toLowerCase();
-  if (!found.length) {
-    box.innerHTML = `<h2>Higher-rated places nearby</h2>
-      <p class="small">No higher-rated places of this type (${esc(kind)}) within about ${esc(formatDistance(radius * 1609.344))}.</p>`;
-    return;
+    return fetched.get(radius);
   }
-  found.sort((a, b) => ratingRank(b) - ratingRank(a) || distanceMetres(a, here) - distanceMetres(b, here));
-  const top = found.slice(0, BETTER_LIMIT);
-  rememberPlaces(top);
-  box.innerHTML = `<h2>Higher-rated places nearby</h2>
-    <p class="small">The same type of place (${esc(kind)}), best rated first. Distances are from this place.</p>
-    <ol class="list better-list">${top.map(q => rowHtml(q, here)).join('')}</ol>`;
+
+  let groups = [];
+  try { groups = ((await cuisinesFor([p])).get(String(p.FHRSID)) || []).slice(0, 2); } catch { /* no cuisine data */ }
+  const cuisine = groups.join(' or ');   // e.g. "Italian or pizza" (the first two recorded)
+
+  async function render(mode) {
+    let found = [], radius = 0;
+    try {
+      for (radius of BETTER_RADII_MILES) {
+        found = await higherRated(radius);
+        if (mode === 'same' && found.length) {
+          const known = await cuisinesFor(found);
+          found = found.filter(q => (known.get(String(q.FHRSID)) || []).some(g => groups.includes(g)));
+        }
+        if (found.length) break;
+      }
+    } catch { return; } // suggestions are a nice-to-have: stay quiet if the FSA can't be reached
+    if (parseRoute().id !== String(p.FHRSID)) return;
+    const toggle = cuisine ? `<div class="toggle better-toggle" role="group" aria-label="Which places to suggest">
+        <button type="button" data-better="same" aria-pressed="${mode === 'same'}">Same cuisine</button>
+        <button type="button" data-better="any" aria-pressed="${mode === 'any'}">Any cuisine</button>
+      </div>` : '';
+    let body;
+    if (!found.length) {
+      const what = mode === 'same' ? `${cuisine} places of this type (${kind})` : `places of this type (${kind})`;
+      body = `<p class="small">No higher-rated ${esc(what)} within about ${esc(formatDistance(radius * 1609.344))}.</p>`;
+    } else {
+      found.sort((a, b) => ratingRank(b) - ratingRank(a) || distanceMetres(a, here) - distanceMetres(b, here));
+      const top = found.slice(0, BETTER_LIMIT);
+      rememberPlaces(top);
+      const note = mode === 'same'
+        ? `${esc(cuisine[0].toUpperCase() + cuisine.slice(1))} places of the same type (${esc(kind)}), best rated first.
+           Cuisines come from map data and business names, so a few may be wrong. Distances are from this place.`
+        : `The same type of place (${esc(kind)}), best rated first. Distances are from this place.`;
+      body = `<p class="small">${note}</p><ol class="list better-list">${top.map(q => rowHtml(q, here)).join('')}</ol>`;
+    }
+    box.innerHTML = `<h2>Higher-rated places nearby</h2>${toggle}${body}`;
+    for (const b of box.querySelectorAll('[data-better]')) {
+      b.addEventListener('click', () => {
+        if (b.dataset.better === mode) return;
+        store.set('betterMode', b.dataset.better);
+        render(b.dataset.better);
+      });
+    }
+  }
+
+  render(cuisine ? store.get('betterMode', 'same') : 'any');
 }
 
 /* ---------- Rating history ----------

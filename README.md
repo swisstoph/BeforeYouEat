@@ -89,7 +89,11 @@ with a similar name at the same postcode or within 150 m (latest release, UK foo
 DuckDB); or clear words and chains in the business name ("Pizza", "Tandoori", "Greggs"). Files are per postcode
 district, e.g. `cuisine/SW1A.json` = `{"<FHRSID>": ["italian;pizza", "osm"]}`, where the second value is the source
 (`osm`, `overture` or `name`). `cuisine/index.json` has the coverage per business type and source. The build refuses
-to publish if the Overture download looks incomplete or coverage drops sharply.
+to publish if the Overture download looks incomplete or coverage drops or jumps sharply.
+
+The app uses it for "Same cuisine" under Higher-rated places nearby (shown for ratings 0-2). `CUISINE_GROUPS` in
+`app.js` treats similar values as one cuisine (cafe and coffee_shop, pizza and pizzeria) and leaves out values that
+don't describe the food. Places without a known cuisine just get the any-cuisine list.
 
 Cuisine data © OpenStreetMap contributors (Open Database Licence) and Overture Maps: data from Meta and Microsoft
 under CDLA Permissive 2.0, and Copyright 2024 Foursquare Labs, Inc., under the Apache License 2.0.
