@@ -435,32 +435,42 @@ function locate() {
     return;
   }
   setStatus('Finding your location…');
-  navigator.geolocation.getCurrentPosition(
-    pos => {
-      if (mine !== token) return;
-      const { latitude: lat, longitude: lon, accuracy } = pos.coords;
-      if (!inUK(lat, lon)) {
-        // Abroad: say so instead of an empty "nothing nearby" list. Searching still works.
-        setStatus('You seem to be outside the UK');
-        state.message = `Before You Eat covers ${esc(COVERAGE)}. Search a UK postcode or place name above to check ratings before you go.`;
-        updateListFooter();
-        refreshMap();
-        return;
-      }
-      lastFix = { lat, lon };
-      const acc = accuracy ? ` (accurate to about ${formatDistance(accuracy)})` : '';
-      resetList({ kind: 'near', lat, lon, label: 'you' }, `Nearest to you${acc}`);
-    },
-    err => {
-      if (mine !== token) return;
-      const denied = err.code === err.PERMISSION_DENIED;
-      setStatus(denied
-        ? 'Location is turned off for this app. Search by name or postcode instead.'
-        : "Couldn't get your location. Search by name or postcode, or try again.");
-      if (!showListSnapshot(denied ? 'Location is turned off.' : "Couldn't get your location.")) $('#q').focus();
-    },
-    { enableHighAccuracy: true, timeout: 15000, maximumAge: 15000 },
-  );
+
+  const found = pos => {
+    if (mine !== token) return;
+    const { latitude: lat, longitude: lon, accuracy } = pos.coords;
+    if (!inUK(lat, lon)) {
+      // Abroad: say so instead of an empty "nothing nearby" list. Searching still works.
+      setStatus('You seem to be outside the UK');
+      state.message = `Before You Eat covers ${esc(COVERAGE)}. Search a UK postcode or place name above to check ratings before you go.`;
+      updateListFooter();
+      refreshMap();
+      return;
+    }
+    lastFix = { lat, lon };
+    const acc = accuracy ? ` (accurate to about ${formatDistance(accuracy)})` : '';
+    resetList({ kind: 'near', lat, lon, label: 'you' }, `Nearest to you${acc}`);
+  };
+
+  const failed = err => {
+    if (mine !== token) return;
+    const denied = err.code === err.PERMISSION_DENIED;
+    setStatus(denied
+      ? 'Location is turned off for this app. Search by name or postcode instead.'
+      : "Couldn't get your location. Check that Location is switched on in your device's settings, or search by name or postcode.");
+    if (!showListSnapshot(denied ? 'Location is turned off for this app.'
+      : "Couldn't get your location: check that Location is switched on in your device's settings.")) $('#q').focus();
+  };
+
+  // First try for a precise fix (GPS). Devices without GPS, such as most tablets, often time out
+  // on that, so then ask again for a quicker Wi-Fi/network-based position.
+  navigator.geolocation.getCurrentPosition(found, err => {
+    if (mine !== token) return;
+    if (err.code === err.PERMISSION_DENIED) { failed(err); return; }
+    setStatus('Finding your location… (using Wi-Fi)');
+    navigator.geolocation.getCurrentPosition(found, failed,
+      { enableHighAccuracy: false, timeout: 20000, maximumAge: 120000 });
+  }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 15000 });
 }
 
 $('#locate').addEventListener('click', () => {

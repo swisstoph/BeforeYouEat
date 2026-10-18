@@ -1,0 +1,46 @@
+# Records each place's food hygiene rating every week, so the app can show how ratings
+# change over time (the FSA only publishes the current one). Run it by hand from the
+# Actions tab with "Run workflow".
+name: Record rating history
+
+on:
+  schedule:
+    - cron: '0 4 * * 1'   # 04:00 UTC every Monday
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: data-commits
+  cancel-in-progress: false
+
+jobs:
+  record:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: pip install -r tools/requirements.txt
+
+      - name: Record ratings
+        run: python -u tools/record_history.py
+
+      - name: Commit if changed
+        run: |
+          if git diff --quiet -- history ':(exclude)history/index.json' && [ -z "$(git ls-files --others --exclude-standard history)" ]; then
+            echo "No rating changes this week."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A history
+          git commit -m "Record rating history"
+          git pull --rebase origin main
+          git push

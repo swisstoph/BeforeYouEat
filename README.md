@@ -27,6 +27,7 @@ The app shows each place in its own scheme, so lists and maps near the border mi
 - `positions/`: exact map positions per postcode district (generated, see below)
 - `tools/build_positions.py`: builds `positions/`
 - `.github/workflows/positions.yml`: monthly GitHub Action that rebuilds `positions/`
+- `history/`, `tools/record_history.py`, `.github/workflows/history.yml`: weekly rating history (see below)
 - `vendor/leaflet/`: map library
 
 ## Run locally
@@ -77,6 +78,15 @@ python tools/build_positions.py --region London --osm https://download.geofabrik
 Re-run every month or so and redeploy. Each build has a new version in `positions/index.json`; the app checks it
 on every online launch, so phones pick up new data automatically. The position files are derived from
 OpenStreetMap and are shared under the Open Database Licence, like the map data.
+
+## Rating history (`history/`)
+
+The FSA only publishes each place's current rating. `tools/record_history.py` keeps a history: it saves every place's
+rating and inspection date, and adds an entry whenever either changes. Files are per postcode district, e.g.
+`history/SW1A.json` = `{"<FHRSID>": [["1", "2025-03-12"], ["5", "2026-08-03"]]}` (oldest first).
+Recording started on 18 October 2026; the first entry for each place is its rating on that day.
+`.github/workflows/history.yml` runs it every Monday and commits only when something changed. It refuses to save
+if the download looks incomplete or an implausible number of ratings changed at once.
 
 ## Settings to fill in
 
