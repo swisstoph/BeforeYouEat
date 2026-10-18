@@ -1,4 +1,4 @@
-# Rebuilds positions/ (exact map positions matched from OpenStreetMap) once a month
+# Rebuilds positions/ (exact map positions matched from OpenStreetMap) and cuisine/ once a month
 # and commits the result. Run it by hand from the Actions tab with "Run workflow".
 name: Refresh map positions
 
@@ -31,6 +31,11 @@ jobs:
       - name: Build positions (whole UK)
         run: python -u tools/build_positions.py --out positions
 
+      - name: Build cuisines (OpenStreetMap, Overture Maps, names)
+        # If this fails the old cuisines stay, and the new positions are still committed.
+        continue-on-error: true
+        run: python -u tools/build_cuisine.py --out cuisine
+
       - name: Commit if changed
         run: |
           # index.json always gets a new build date, so only commit when a district file changed.
@@ -41,6 +46,6 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A positions cuisine
-          git commit -m "Refresh map positions and cuisines from OpenStreetMap"
+          git commit -m "Refresh map positions and cuisines"
           git pull --rebase origin main
           git push

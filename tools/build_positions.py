@@ -217,7 +217,8 @@ def main():
     ap.add_argument('--out', default='positions', help='output folder')
     ap.add_argument('--cache', default='tools/.cache', help='download cache folder')
     ap.add_argument('--force', action='store_true', help='publish even if the sanity checks fail')
-    ap.add_argument('--cuisine-out', default='cuisine', help='folder for the recorded cuisines')
+    ap.add_argument('--osm-cuisine', default='tools/.cache/osm_cuisine.json',
+                    help='file for the matched OpenStreetMap cuisines (merged by build_cuisine.py)')
     args = ap.parse_args()
 
     cache = Path(args.cache)
@@ -233,7 +234,6 @@ def main():
 
     files = defaultdict(dict)
     cuisines = defaultdict(dict)                                   # district -> {FHRSID: "italian;pizza"}
-    cuisine_by_type = defaultdict(lambda: {'places': 0, 'with_cuisine': 0})
     stats = {'places': 0, 'id': 0, 'name': 0, 'outside': 0}
     for p in places:
         g = p.get('Geocode') or {}
@@ -245,7 +245,6 @@ def main():
         if not d:
             continue
         stats['places'] += 1
-        cuisine_by_type[p.get('BusinessType') or 'Other']['places'] += 1
         how, r = locate(p, lat, lon, by_id, grid)
         if not how:
             continue
@@ -257,7 +256,6 @@ def main():
         c = clean_cuisine(r.get('cuisine'))
         if c:
             cuisines[d][str(p['FHRSID'])] = c
-            cuisine_by_type[p.get('BusinessType') or 'Other']['with_cuisine'] += 1
 
     exact = stats['id'] + stats['name']
     stats['exact'] = exact
@@ -301,11 +299,11 @@ def main():
     tmp.rename(out)
     report(summary, [])
     print(f'Wrote {len(files)} district files to {out}/ (version {version})')
-    write_cuisines(Path(args.cuisine_out), cuisines, cuisine_by_type, version)
+    write_osm_cuisines(Path(args.osm_cuisine), cuisines)
     return 0
 
 
-# ---------- cuisines (recorded for later use) ----------
+# ---------- cuisines ----------
 
 def clean_cuisine(value):
     """OpenStreetMap cuisine tag, tidied: lower case, ';'-separated, e.g. 'italian;pizza'."""
@@ -313,33 +311,12 @@ def clean_cuisine(value):
     return ';'.join(dict.fromkeys(c for c in parts if c))
 
 
-def write_cuisines(out, cuisines, by_type, version):
-    if out.exists():
-        shutil.rmtree(out)
-    out.mkdir(parents=True)
-    for d, entries in sorted(cuisines.items()):
-        write_json(out / f'{d}.json', dict(sorted(entries.items())), compact=True)
-    counts = defaultdict(int)
-    for entries in cuisines.values():
-        for c in entries.values():
-            for one in c.split(';'):
-                counts[one] += 1
-    coverage = {t: {**v, 'share': round(v['with_cuisine'] / v['places'], 3) if v['places'] else 0}
-                for t, v in sorted(by_type.items(), key=lambda kv: -kv[1]['places'])}
-    total = sum(len(e) for e in cuisines.values())
-    write_json(out / 'index.json', {
-        'version': version,
-        'note': 'Cuisine tags from OpenStreetMap for FSA places matched to an OSM entry. Recorded for later use.',
-        'licence': 'Cuisine data © OpenStreetMap contributors, ODbL 1.0. https://www.openstreetmap.org/copyright',
-        'places_with_cuisine': total,
-        'coverage_by_business_type': coverage,
-        'top_cuisines': dict(sorted(counts.items(), key=lambda kv: -kv[1])[:40]),
-        'districts': sorted(cuisines),
-    })
-    restaurants = by_type.get('Restaurant/Cafe/Canteen', {'places': 0, 'with_cuisine': 0})
-    takeaways = by_type.get('Takeaway/sandwich shop', {'places': 0, 'with_cuisine': 0})
-    pct = lambda v: f"{100 * v['with_cuisine'] / max(1, v['places']):.0f}%"
-    print(f'Cuisines: {total:,} places | restaurants/cafes {pct(restaurants)} | takeaways {pct(takeaways)} | written to {out}/')
+def write_osm_cuisines(path, cuisines):
+    """All matched OpenStreetMap cuisines in one file, for build_cuisine.py to merge with other sources."""
+    flat = {fid: c for entries in cuisines.values() for fid, c in entries.items()}
+    path.parent.mkdir(parents=True, exist_ok=True)
+    write_json(path, flat, compact=True)
+    print(f'OpenStreetMap cuisines: {len(flat):,} places, written to {path}')
 
 
 # ---------- checks ----------

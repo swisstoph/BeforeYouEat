@@ -26,10 +26,10 @@ The app shows each place in its own scheme, so lists and maps near the border mi
 - `manifest.webmanifest`, `icons/`: home-screen install
 - `positions/`: exact map positions per postcode district (generated, see below)
 - `tools/build_positions.py`: builds `positions/`
-- `.github/workflows/positions.yml`: monthly GitHub Action that rebuilds `positions/`
+- `.github/workflows/positions.yml`: monthly GitHub Action that rebuilds `positions/` and `cuisine/`
 - `history/`, `tools/record_history.py`, `.github/workflows/history.yml`: weekly rating history (see below)
-- `cuisine/`: OpenStreetMap cuisine tags for matched places, written by `build_positions.py` (`cuisine/index.json`
-  has the coverage per business type)
+- `cuisine/`, `tools/build_cuisine.py`: cuisine of food places from OpenStreetMap, Overture Maps and business names
+  (see below)
 - `vendor/leaflet/`: map library
 
 ## Run locally
@@ -80,6 +80,19 @@ python tools/build_positions.py --region London --osm https://download.geofabrik
 Re-run every month or so and redeploy. Each build has a new version in `positions/index.json`; the app checks it
 on every online launch, so phones pick up new data automatically. The position files are derived from
 OpenStreetMap and are shared under the Open Database Licence, like the map data.
+
+## Cuisines (`cuisine/`)
+
+`tools/build_cuisine.py` runs after `build_positions.py` and records what kind of food each place serves, taking the
+first of three sources: the OpenStreetMap cuisine tag of the matched place; the category of an Overture Maps place
+with a similar name at the same postcode or within 150 m (latest release, UK food and drink places only, read with
+DuckDB); or clear words and chains in the business name ("Pizza", "Tandoori", "Greggs"). Files are per postcode
+district, e.g. `cuisine/SW1A.json` = `{"<FHRSID>": ["italian;pizza", "osm"]}`, where the second value is the source
+(`osm`, `overture` or `name`). `cuisine/index.json` has the coverage per business type and source. The build refuses
+to publish if the Overture download looks incomplete or coverage drops sharply.
+
+Cuisine data © OpenStreetMap contributors (Open Database Licence) and Overture Maps: data from Meta and Microsoft
+under CDLA Permissive 2.0, and Copyright 2024 Foursquare Labs, Inc., under the Apache License 2.0.
 
 ## Rating history (`history/`)
 

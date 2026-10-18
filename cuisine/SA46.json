@@ -1,1 +1,1 @@
-{"1313465":"chinese","1539275":"deli","1618804":"burger;coffee_shop;ice_cream;fish_and_chips","863372":"indian","863374":"pizza","864331":"fish_and_chips"}
+{"1313465":["chinese","osm"],"1539275":["deli","osm"],"1618804":["burger;coffee_shop;ice_cream;fish_and_chips","osm"],"1618806":["hotel_bar","overture"],"863372":["indian","osm"],"863374":["pizza","osm"],"863810":["cafe","overture"],"864331":["fish_and_chips","osm"],"971988":["cafe","overture"]}

@@ -1,1 +1,1 @@
-{"1030965":"coffee_shop","1220540":"burger","1220541":"sandwich;bakery","237608":"american","237628":"transport_cafe","238635":"chinese"}
+{"1030965":["coffee_shop","osm"],"1212939":["burger","name"],"1220540":["burger","osm"],"1220541":["sandwich;bakery","osm"],"1253492":["fish_and_chips","name"],"1253495":["cafe","overture"],"1656108":["cafe","overture"],"1701719":["coffee_shop","name"],"1813945":["cafe","overture"],"237608":["american","osm"],"237628":["transport_cafe","osm"],"238635":["chinese","osm"]}
