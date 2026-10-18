@@ -637,11 +637,12 @@ async function showDetail(id) {
 
 /* ---------- Higher-rated places nearby ----------
    For low ratings (0-2, or Scotland's Improvement required): up to 5 places of the same type
-   of business, on the same scheme, rated higher, best first then nearest. When the place's
+   of business, on the same scheme, rated 3 or more (Pass in Scotland), best first then nearest. When the place's
    cuisine is known (cuisine/<DISTRICT>.json, built by tools/build_cuisine.py), the list can
    be narrowed to places with the same cuisine. */
 
 const BETTER_LIMIT = 5;
+const BETTER_MIN_RATING = 3;                 // only suggest 3, 4 or 5 (in Scotland: Pass)
 const BETTER_RADII_MILES = [0.3, 1];   // about 500 m first, widening to about 1.5 km if needed
 
 // Cuisine values that count as the same thing, and how to name them. Anything else is its own
@@ -791,7 +792,8 @@ async function loadBetterNearby(p) {
       });
       fetched.set(radius, (data.establishments || []).filter(q => String(q.FHRSID) !== String(p.FHRSID)
         && (q.SchemeType || 'FHRS') === (p.SchemeType || 'FHRS')
-        && ratingRank(q) != null && ratingRank(q) > mine));
+        && ratingRank(q) != null && ratingRank(q) > mine
+        && (q.SchemeType === 'FHIS' || ratingRank(q) >= BETTER_MIN_RATING)));
     }
     return fetched.get(radius);
   }
