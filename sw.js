@@ -1,5 +1,5 @@
 // Bump this when you deploy changed files so phones pick up the new version.
-const VERSION = 'sotd-v38';
+const VERSION = 'sotd-v39';
 const SHELL = [
   './',
   'index.html',

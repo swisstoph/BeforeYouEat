@@ -353,7 +353,11 @@ dl.facts dd { margin: 2px 0 0; }
 .tip-btn:hover { border-color: var(--muted); }
 
 /* Higher-rated places nearby (detail page) */
-.better { margin: 18px 0 8px; padding: 14px 14px 4px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
+.better { margin: 18px 0 8px; padding: 14px 14px 4px; border: 1px solid var(--line); border-left: 5px solid var(--good-bg);
+  border-radius: 12px; background: var(--surface); }
+@supports (background: color-mix(in srgb, red 10%, white)) {
+  .better { background: color-mix(in srgb, var(--good-bg) 7%, var(--surface)); }
+}
 .better h2 { margin: 0 0 10px; }
 .better .small { margin: 0 0 8px; }
 .better-choice { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin: 0 0 10px; }

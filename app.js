@@ -784,8 +784,10 @@ async function loadBetterNearby(p) {
       found.sort((a, b) => ratingRank(b) - ratingRank(a) || distanceMetres(a, here) - distanceMetres(b, here));
       const top = found.slice(0, BETTER_LIMIT);
       rememberPlaces(top);
-      const note = `The same type of place (${esc(kind)}), best rated first. Distances are from this place.`
-        + (mode === 'same' ? ' Cuisines come from map data and business names, so a few may be wrong.' : '');
+      const note = `Same type of place (${esc(kind)}), best rated first; distances from this place. `
+        + (mode === 'same'
+          ? 'Chosen only by hygiene rating, distance and cuisine (from map data, so occasionally wrong), not a recommendation.'
+          : 'Chosen only by hygiene rating and distance, not a recommendation.');
       body = `<p class="small">${note}</p><ol class="list better-list">${top.map(q => rowHtml(q, here)).join('')}</ol>`;
     }
     box.innerHTML = `<h2>Higher-rated places nearby</h2>${toggle}${body}`;
