@@ -353,3 +353,7 @@ dl.facts dd { margin: 2px 0 0; }
   color: var(--text); background: var(--surface); border: 1.5px solid var(--line);
 }
 .tip-btn:hover { border-color: var(--muted); }
+
+/* Higher-rated places nearby (detail page) */
+#better h2 { margin-top: 20px; }
+.better-list { margin: 0 0 18px; border-top: 1px solid var(--line); }

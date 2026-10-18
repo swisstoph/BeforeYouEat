@@ -251,13 +251,14 @@ function resetList(query, statusText) {
   loadMore();
 }
 
-function rowHtml(p) {
+// origin: where distances are measured from (the list's search point by default).
+function rowHtml(p, origin = state.origin) {
   const meta = [p.BusinessType, inspectionDate(p) ? `Inspected ${inspectionDate(p)}` : 'No inspection date']
     .filter(Boolean).map(esc).join(' · ');
   return `<li><a class="row-link" href="#/place/${encodeURIComponent(p.FHRSID)}">
     <div class="tile-wrap">${tileHtml(p)}</div>
     <div class="row-main"><div class="row-name">${esc(p.BusinessName)}</div><div class="row-meta">${meta}</div></div>
-    <div class="row-dist">${esc(formatDistance(distanceMetres(p, state.origin)))}</div>
+    <div class="row-dist">${esc(formatDistance(distanceMetres(p, origin)))}</div>
   </a></li>`;
 }
 
@@ -268,7 +269,7 @@ function appendPlaces(list) {
     if (state.query.kind === 'near' && !settings.types.includes(p.BusinessTypeID)) continue;
     shown.push(p);
   }
-  listEl.insertAdjacentHTML('beforeend', shown.map(rowHtml).join(''));
+  listEl.insertAdjacentHTML('beforeend', shown.map(p => rowHtml(p)).join(''));
   state.shown += shown.length;
   state.saved.push(...shown);
   refreshMap();
@@ -379,7 +380,7 @@ function restoreList(saved) {
   token++;
   state = saved;
   state.loading = false;
-  listEl.innerHTML = state.saved.map(rowHtml).join('');
+  listEl.innerHTML = state.saved.map(p => rowHtml(p)).join('');
   statusEl.textContent = state.status;
   offlineEl.textContent = state.offline;
   offlineEl.hidden = !state.offline;
@@ -630,7 +631,56 @@ async function showDetail(id) {
   if (parseRoute().id !== String(id)) return; // user has moved on
   renderDetail(p);
   loadScoreWords(p);
+  loadBetterNearby(p);
   loadHistory(p);
+}
+
+/* ---------- Higher-rated places nearby ----------
+   For low ratings (0-2, or Scotland's Improvement required): up to 5 places of the same type
+   of business, on the same scheme, rated higher, best first then nearest. */
+
+const BETTER_LIMIT = 5;
+const BETTER_RADII_MILES = [0.3, 1];   // about 500 m first, widening to about 1.5 km if needed
+
+function ratingRank(p) {
+  if (p.SchemeType === 'FHIS') return { 'Pass': 2, 'Pass and Eat Safe': 2, 'Improvement Required': 1 }[p.RatingValue] ?? null;
+  const n = Number(p.RatingValue);
+  return p.RatingValue !== '' && Number.isInteger(n) ? n : null;   // awaiting / exempt: not comparable
+}
+
+async function loadBetterNearby(p) {
+  const box = detailEl.querySelector('#better');
+  if (!box || !['0', '1', '2', 'Improvement Required'].includes(p.RatingValue)) return;
+  const lat = parseFloat(p.geocode?.latitude), lon = parseFloat(p.geocode?.longitude);
+  if (!isFinite(lat) || !isFinite(lon)) return;
+  const mine = ratingRank(p);
+  const here = { lat, lon };
+  let found = [], radius = 0;
+  try {
+    for (radius of BETTER_RADII_MILES) {
+      const data = await api('/Establishments', {
+        latitude: lat, longitude: lon, maxDistanceLimit: radius, sortOptionKey: 'distance',
+        businessTypeId: p.BusinessTypeID, pageSize: 100,
+      });
+      found = (data.establishments || []).filter(q => String(q.FHRSID) !== String(p.FHRSID)
+        && (q.SchemeType || 'FHRS') === (p.SchemeType || 'FHRS')
+        && ratingRank(q) != null && ratingRank(q) > mine);
+      if (found.length) break;
+    }
+  } catch { return; } // suggestions are a nice-to-have: stay quiet if the FSA can't be reached
+  if (parseRoute().id !== String(p.FHRSID)) return;
+  const kind = (p.BusinessType || 'places').toLowerCase();
+  if (!found.length) {
+    box.innerHTML = `<h2>Higher-rated places nearby</h2>
+      <p class="small">No higher-rated places of this type (${esc(kind)}) within about ${esc(formatDistance(radius * 1609.344))}.</p>`;
+    return;
+  }
+  found.sort((a, b) => ratingRank(b) - ratingRank(a) || distanceMetres(a, here) - distanceMetres(b, here));
+  const top = found.slice(0, BETTER_LIMIT);
+  rememberPlaces(top);
+  box.innerHTML = `<h2>Higher-rated places nearby</h2>
+    <p class="small">The same type of place (${esc(kind)}), best rated first. Distances are from this place.</p>
+    <ol class="list better-list">${top.map(q => rowHtml(q, here)).join('')}</ol>`;
 }
 
 /* ---------- Rating history ----------
@@ -719,6 +769,7 @@ function renderDetail(p) {
           </details></li>`).join('')}
         </ul>` : ''}
       ${['0', '1', '2', 'Improvement Required'].includes(p.RatingValue) ? lowRatingNote(p) : ''}
+      <div id="better"></div>
       <div id="history"></div>
 
       <dl class="facts">
@@ -1145,7 +1196,7 @@ function openMapCard(group, marker) {
   activePin?.classList.remove('active');
   activePin = marker.getElement()?.querySelector('.pin');
   activePin?.classList.add('active');
-  $('#map-card-list').innerHTML = group.places.map(rowHtml).join('');
+  $('#map-card-list').innerHTML = group.places.map(p => rowHtml(p)).join('');
   $('#map-card').hidden = false;
   $('#map-card').scrollTop = 0;
 }
