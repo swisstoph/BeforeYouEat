@@ -327,9 +327,10 @@ dl.facts dd { margin: 2px 0 0; }
 .fold-value { margin-left: auto; font-size: 16px; font-weight: 600; color: var(--muted); text-align: right; }
 .fold-body p { margin: 0 0 12px; }
 .key-label { font-size: 13px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); margin: 10px 0 6px !important; }
-.tips { margin: 0; padding-left: 20px; }
-.fold-body .tips { margin-bottom: 12px; }
-.tips li { margin-bottom: 8px; }
+/* Rows of short items: bold lead-in, one sentence below, thin dividers (no bullets) */
+.info-rows { margin: 0 0 12px; border-top: 1px solid var(--line); }
+.info-rows p { margin: 0 !important; padding: 10px 0; border-bottom: 1px solid var(--line); font-size: 16px; }
+.info-rows strong { display: block; margin-bottom: 2px; }
 .independent { margin: 20px 0 0; font-size: 14px; color: var(--muted); }
 
 /* Scotland key: same tile size as the 0-5 row, with words instead of numbers */
