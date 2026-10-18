@@ -53,8 +53,9 @@ Bump `VERSION` in `sw.js` when you change app files, so installed copies refresh
 
 ## Monthly data refresh
 
-`.github/workflows/positions.yml` runs on the 2nd of each month (and on demand from the Actions tab → Refresh map
-positions → Run workflow). It rebuilds `positions/` and commits only if a district file changed.
+`.github/workflows/positions.yml` runs on the 2nd of each month at 03:00 UTC (and on demand from the Actions tab →
+Refresh map positions → Run workflow). It rebuilds `positions/`, then `cuisine/`, and commits only if a district file
+changed. A full run takes about 15 minutes.
 For it to push, the repository needs Settings → Actions → General → Workflow permissions → "Read and write permissions".
 With GitHub Pages, check the site redeploys after the bot's commit; Cloudflare Pages always does.
 
@@ -81,6 +82,22 @@ Re-run every month or so and redeploy. Each build has a new version in `position
 on every online launch, so phones pick up new data automatically. The position files are derived from
 OpenStreetMap and are shared under the Open Database Licence, like the map data.
 
+## Checks and failure emails
+
+Every data job checks its result before publishing and leaves the published files unchanged if something looks wrong:
+
+| Job | Stops if |
+|---|---|
+| Map positions | a download fails; under 300,000 FSA places; exact-position rate outside 35-60%; positions outside the UK; places, exact positions or district files drop more than 10% or jump more than 20% since the last build; files don't read back |
+| Cuisines | a download fails; under 200,000 Overture food places or 300,000 FSA places; restaurant coverage outside 35-80%; places with a cuisine drop more than 10% or jump more than 20%; files don't read back |
+| Rating history | under 300,000 places; more than 30% of ratings changed or more than 20% of places new in one run; FSA places drop more than 10% or jump more than 20% since the last run |
+
+A stopped job makes the run fail. If the cuisine step fails, the new positions are still committed and the run is
+marked failed at the end. GitHub emails failed runs to the account owner (github.com/settings/notifications →
+Actions → Email, "Only notify for failed workflows"); there is no mail code in the repository. Each run's summary
+page shows the numbers and any failed check. Scheduled workflows pause after 60 days without repository activity;
+the weekly history commits keep the repository active.
+
 ## Cuisines (`cuisine/`)
 
 `tools/build_cuisine.py` runs after `build_positions.py` and records what kind of food each place serves, taking the
@@ -91,8 +108,10 @@ district, e.g. `cuisine/SW1A.json` = `{"<FHRSID>": ["italian;pizza", "osm"]}`, w
 (`osm`, `overture` or `name`). `cuisine/index.json` has the coverage per business type and source. The build refuses
 to publish if the Overture download looks incomplete or coverage drops or jumps sharply.
 
-The app uses it for "Same cuisine" under Higher-rated places nearby (shown for ratings 0-2, suggesting only places rated 3 or more). `CUISINE_GROUPS` in
-`app.js` treats similar values as one cuisine (cafe and coffee_shop, pizza and pizzeria) and leaves out values that
+Higher-rated places nearby appears on places rated 0-2 (Improvement required in Scotland). It suggests up to five
+places of the same FSA business type rated 3 or more (Pass in Scotland), within about 500 m, widening to about 1.6 km
+if needed. When the place's cuisine is known it opens on that cuisine ("Indian or similar"), with "Any cuisine" one
+tap away. `CUISINE_GROUPS` in `app.js` treats similar values as one cuisine (cafe and coffee_shop, pizza and pizzeria) and leaves out values that
 don't describe the food. `CUISINE_FAMILIES` links similar cuisines (dessert, bakery and café; the fast-food
 family; East Asian; and so on): when no higher-rated place with the same cuisine is nearby, similar ones are shown
 instead, and the app says so. Places without a known cuisine just get the any-cuisine list. Suggestions are chosen only
@@ -110,15 +129,17 @@ Recording started on 18 October 2026; the first entry for each place is its rati
 `.github/workflows/history.yml` runs it every Monday and commits only when something changed. It refuses to save
 if the download looks incomplete or an implausible number of ratings changed at once.
 
-## Settings to fill in
+## Settings
 
-- `TIP_URL` at the top of `app.js`: your Buy Me a Coffee or Ko-fi link. The link stays hidden while this is empty.
+- `TIP_URL` at the top of `app.js`: the Ko-fi link behind "Buy me a coffee". The button stays hidden if this is empty.
 
 ## Data sources
 
 - Food Standards Agency, Food Hygiene Rating Scheme API (`api.ratings.food.gov.uk`, header `x-api-version: 2`), under the Open Government Licence v3.0.
   The API rate-limits bursts of requests from one IP address. The app sends one request per screen of results.
 - postcodes.io for postcode search, with the FSA as a fallback.
+- Exact positions and cuisines: OpenStreetMap (ODbL) and Overture Maps places (CDLA Permissive 2.0 and Apache 2.0),
+  built monthly into static files, see above.
 - Map: Leaflet 1.9.4, bundled in `vendor/leaflet` (BSD-2 licence; checksums match the official release).
   The map images come from OpenStreetMap's free tile servers, which have a
   [fair-use policy](https://operations.osmfoundation.org/policies/tiles/). If the app gets busy, switch the

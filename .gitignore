@@ -3,3 +3,4 @@ positions-new/
 __pycache__/
 .venv/
 positions.tmp/
+cuisine.tmp/
