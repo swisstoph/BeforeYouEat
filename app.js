@@ -821,7 +821,7 @@ async function loadBetterNearby(p) {
       }
     } catch { return; } // suggestions are a nice-to-have: stay quiet if the FSA can't be reached
     if (parseRoute().id !== String(p.FHRSID)) return;
-    const sameLabel = groups.length > 1 ? `${capital(groups[0])}, ${groups[1]}` : capital(cuisine);
+    const sameLabel = groups.length > 1 ? `${capital(groups[0])}, ${groups[1]}` : cuisine && capital(cuisine);
     const toggle = cuisine ? `<div class="better-choice"><span class="better-choice-label">Show</span>
         <div class="toggle" role="group" aria-label="Which places to suggest">
           <button type="button" data-better="same" aria-pressed="${mode === 'same'}">${esc(sameLabel)}${similar.size ? ' or similar' : ' only'}</button>
@@ -850,13 +850,12 @@ async function loadBetterNearby(p) {
     for (const b of box.querySelectorAll('[data-better]')) {
       b.addEventListener('click', () => {
         if (b.dataset.better === mode) return;
-        store.set('betterMode', b.dataset.better);
         render(b.dataset.better);
       });
     }
   }
 
-  render(cuisine ? store.get('betterMode', 'same') : 'any');
+  render(cuisine ? 'same' : 'any');   // always start with the cuisine choice when there is one
 }
 
 /* ---------- Rating history ----------
