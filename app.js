@@ -455,11 +455,15 @@ function locate() {
   const failed = err => {
     if (mine !== token) return;
     const denied = err.code === err.PERMISSION_DENIED;
-    setStatus(denied
-      ? 'Location is turned off for this app. Search by name or postcode instead.'
-      : "Couldn't get your location. Check that Location is switched on in your device's settings, or search by name or postcode.");
-    if (!showListSnapshot(denied ? 'Location is turned off for this app.'
-      : "Couldn't get your location: check that Location is switched on in your device's settings.")) $('#q').focus();
+    setStatus(denied ? 'Location is turned off for this app' : "Couldn't get your location");
+    // Saved results are for having no signal. Online, showing old results from somewhere else
+    // after "Use my location" would look as if they were nearby, so explain instead.
+    if (navigator.onLine === false && showListSnapshot(denied ? 'Location is turned off for this app.' : "Couldn't get your location.")) return;
+    state.message = denied
+      ? 'Allow location for Before You Eat in your device settings, or search by postcode or name above.'
+      : "Check that Location is switched on in your device's settings and try again, or search by postcode or name above.";
+    updateListFooter();
+    refreshMap();
   };
 
   // First try for a precise fix (GPS). Devices without GPS, such as most tablets, often time out
