@@ -1,11 +1,11 @@
 {
  "started": "2026-10-18",
- "updated": "2026-10-19",
- "version": "202610190941",
+ "updated": "2026-10-26",
+ "version": "202610260942",
  "source": "Food Standards Agency open data (Open Government Licence v3.0), recorded weekly",
  "stats": {
-  "places": 508779,
-  "with_history": 22
+  "places": 508775,
+  "with_history": 4838
  },
  "districts": [
   "A29",
