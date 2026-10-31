@@ -207,6 +207,7 @@ h2 { font-size: 19px; margin: 0 0 8px; }
   display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
 }
 .row-meta { color: var(--muted); font-size: 15px; margin-top: 2px; }
+.row-note { font-size: 14px; font-weight: 600; margin-top: 2px; }
 .row-dist { font-weight: 700; font-size: 16px; white-space: nowrap; align-self: center; }
 .sentinel { height: 1px; }
 
@@ -250,7 +251,11 @@ h2 { font-size: 19px; margin: 0 0 8px; }
 .detail-label { font-size: 22px; font-weight: 750; line-height: 1.2; }
 .detail-date { color: var(--muted); margin-top: 4px; }
 .detail h1 { margin: 0 0 4px; font-size: 24px; line-height: 1.2; }
-.detail .type { color: var(--muted); margin: 0 0 16px; }
+.detail .type { color: var(--muted); margin: 0 0 12px; }
+.detail-tools { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 16px; }
+.chip.tool { display: inline-flex; align-items: center; gap: 6px; height: 40px; padding: 0 16px 0 12px; }
+.chip.tool.on { color: var(--bg); background: var(--text); border-color: var(--text); }
+.bar-actions { display: flex; align-items: center; gap: 16px; }
 
 dl.facts { margin: 0 0 18px; }
 dl.facts dt { font-size: 14px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.03em; margin-top: 14px; }

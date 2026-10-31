@@ -26,6 +26,7 @@
       <a href="#/" class="wordmark" aria-label="Before You Eat, home">Before<span> You Eat</span></a>
     </div>
     <nav class="bar-actions">
+      <a href="#/saved" id="saved-link" class="text-btn">Saved</a>
       <a href="#/settings" id="settings-link" class="text-btn">Settings</a>
     </nav>
   </header>
@@ -105,6 +106,20 @@
     <!-- Detail view -->
     <section id="view-detail" class="view" hidden></section>
 
+    <!-- Saved places -->
+    <section id="view-saved" class="view" hidden>
+      <h1>Saved places</h1>
+      <p id="saved-status" class="status" aria-live="polite"></p>
+      <ol id="saved-list" class="list"></ol>
+      <div id="saved-empty" class="info-rows" hidden>
+        <p><strong>Nothing saved yet</strong>Open a place and tap Save to keep it here.</p>
+        <p><strong>Works without signal</strong>Each saved place keeps its last-known rating, checked again whenever you're online.</p>
+        <p><strong>Only on this phone</strong>No account needed. Your saved places aren't sent anywhere.</p>
+      </div>
+      <p id="saved-note" class="small" hidden>Saved on this phone only. Ratings are checked again when you open this list online.
+        To remove a place, open it and tap Saved.</p>
+    </section>
+
     <!-- Settings view -->
     <section id="view-settings" class="view" hidden>
       <h1>Settings</h1>
@@ -169,6 +184,8 @@
         <div class="fold-body">
         <div class="info-rows">
           <p><strong>List or map</strong>Switch between them above the results.</p>
+          <p><strong>Save a place</strong>Tap Save on a place to find it under Saved, even with no signal. You'll see if its rating changes.</p>
+          <p><strong>Share a place</strong>Tap Share to send its rating and a link to someone.</p>
           <p><strong>Moved the map?</strong>Tap Search this area to load the places you're looking at.</p>
           <p><strong>Places that share a spot</strong>Zoom in to see them one by one. A thin line leads from each pin to a small dot where the place really is.</p>
           <p><strong>Pins can be a street out</strong>Some places are only located by their postcode.</p>

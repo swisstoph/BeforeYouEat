@@ -19,9 +19,9 @@ The app shows each place in its own scheme, so lists and maps near the border mi
 
 ## Files
 
-- `index.html`: page structure (list, detail, settings)
+- `index.html`: page structure (list, detail, saved places, settings)
 - `styles.css`: styles, light and dark themes, rating tile colours
-- `app.js`: everything else (location, FSA API, search, navigation, settings)
+- `app.js`: everything else (location, FSA API, search, navigation, saved places, sharing, settings)
 - `sw.js`: service worker for offline use. Bump `VERSION` when you deploy.
 - `manifest.webmanifest`, `icons/`: home-screen install
 - `positions/`: exact map positions per postcode district (generated, see below)
@@ -128,6 +128,16 @@ rating and inspection date, and adds an entry whenever either changes. Files are
 Recording started on 18 October 2026; the first entry for each place is its rating on that day.
 `.github/workflows/history.yml` runs it every Monday and commits only when something changed. It refuses to save
 if the download looks incomplete or an implausible number of ratings changed at once.
+
+## Saved places and sharing
+
+A place's page has **Save** and **Share** buttons. Saved places are listed under **Saved** in the header. They are kept
+in the phone's storage only (`sotd:savedPlaces`, at most 100), each with its full record as last checked, so the list
+and the places' pages work without signal. Opening the list online checks each place again (at most once an hour,
+three requests at a time); a changed rating is noted for 30 days, and a place the FSA no longer lists is marked.
+Any fresh record of a saved place from other results updates it too.
+**Share** uses the phone's share sheet (Web Share API) with the rating, inspection date and a `#/place/<FHRSID>` link;
+without one it copies the text and link. Both are plain web features, so the website and the Android app get them alike.
 
 ## Settings
 

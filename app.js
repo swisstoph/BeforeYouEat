@@ -198,6 +198,7 @@ function rememberPlaces(list) {
   for (const p of list) { places.delete(String(p.FHRSID)); places.set(String(p.FHRSID), p); }
   while (places.size > CACHE_MAX_PLACES) places.delete(places.keys().next().value);
   store.set('places', [...places.values()]);
+  if (list.map(p => updateSaved(p)).some(Boolean)) writeSaved();
 }
 
 /* ---------- Lists ----------
@@ -252,12 +253,12 @@ function resetList(query, statusText) {
 }
 
 // origin: where distances are measured from (the list's search point by default).
-function rowHtml(p, origin = state.origin) {
+function rowHtml(p, origin = state.origin, note = '') {
   const meta = [p.BusinessType, inspectionDate(p) ? `Inspected ${inspectionDate(p)}` : 'No inspection date']
     .filter(Boolean).map(esc).join(' · ');
   return `<li><a class="row-link" href="#/place/${encodeURIComponent(p.FHRSID)}">
     <div class="tile-wrap">${tileHtml(p)}</div>
-    <div class="row-main"><div class="row-name">${esc(p.BusinessName)}</div><div class="row-meta">${meta}</div></div>
+    <div class="row-main"><div class="row-name">${esc(p.BusinessName)}</div><div class="row-meta">${meta}</div>${note ? `<div class="row-note">${esc(note)}</div>` : ''}</div>
     <div class="row-dist">${esc(formatDistance(distanceMetres(p, origin)))}</div>
   </a></li>`;
 }
@@ -616,8 +617,155 @@ $('#welcome-search').addEventListener('submit', e => {
 
 const detailEl = $('#view-detail');
 
+/* ---------- Saved places ----------
+   Kept on this phone only (no account). Each entry holds the place's record as last checked,
+   so the Saved list and the detail pages work without signal. Ratings are checked again
+   when the Saved list is opened online, and whenever the place turns up in other results. */
+
+const SAVED_MAX = 100;
+const SAVED_RECHECK_MS = 60 * 60 * 1000;      // check saved ratings again at most once an hour
+const CHANGE_NOTE_MS = 30 * 24 * 3600 * 1000; // show "rating changed" for 30 days
+// [{ p: place record, savedAt, checkedAt, prev?: rating before the last change, changedAt?, gone? }]
+let savedPlaces = store.get('savedPlaces', []).filter(s => s && s.p && s.p.FHRSID != null);
+
+const savedEntry = id => savedPlaces.find(s => String(s.p.FHRSID) === String(id));
+function writeSaved() { store.set('savedPlaces', savedPlaces); }
+
+function toggleSaved(p) {
+  const s = savedEntry(p.FHRSID);
+  if (s) savedPlaces = savedPlaces.filter(x => x !== s);
+  else {
+    savedPlaces.unshift({ p, savedAt: Date.now(), checkedAt: Date.now() });
+    savedPlaces = savedPlaces.slice(0, SAVED_MAX);
+  }
+  writeSaved();
+  return !s;
+}
+
+// A fresh record from the FSA: keep the saved copy up to date and note a changed rating.
+function updateSaved(fresh, now = Date.now()) {
+  const s = savedEntry(fresh.FHRSID);
+  if (!s) return false;
+  if (fresh.RatingValue !== s.p.RatingValue) { s.prev = s.p.RatingValue; s.changedAt = now; }
+  const { Distance, ...record } = fresh;   // distance belongs to the search it came from
+  s.p = record;
+  s.checkedAt = now;
+  delete s.gone;
+  return true;
+}
+
+function ratingText(value) {
+  const r = RATINGS[value];
+  if (!r) return String(value ?? 'unknown');
+  return r.word ? r.label : `${value} (${r.label.toLowerCase()})`;
+}
+
+function changeNote(s) {
+  if (s.gone) return 'No longer listed by the FSA';
+  if (s.prev == null || !s.changedAt || Date.now() - s.changedAt > CHANGE_NOTE_MS) return '';
+  return `Rating changed from ${ratingText(s.prev)}`;
+}
+
+let savedChecking = null;
+async function checkSaved() {
+  if (savedChecking) return savedChecking;
+  const due = savedPlaces.filter(s => Date.now() - (s.checkedAt || 0) > SAVED_RECHECK_MS);
+  if (!due.length || navigator.onLine === false) return;
+  savedChecking = (async () => {
+    let failed = false;
+    const queue = due.slice();
+    const worker = async () => {
+      while (queue.length && !failed) {
+        const s = queue.shift();
+        try {
+          const fresh = await api(`/Establishments/${encodeURIComponent(s.p.FHRSID)}`);
+          updateSaved(fresh);
+          places.delete(String(fresh.FHRSID)); places.set(String(fresh.FHRSID), fresh);
+        } catch (e) {
+          if (e.status === 404) { s.gone = true; s.checkedAt = Date.now(); }
+          else failed = true;   // offline or the service is busy: try again next time
+        }
+      }
+    };
+    await Promise.all([worker(), worker(), worker()]);
+    store.set('places', [...places.values()]);
+    writeSaved();
+    return failed;
+  })();
+  try { return await savedChecking; } finally { savedChecking = null; }
+}
+
+const savedListEl = $('#saved-list'), savedStatusEl = $('#saved-status');
+
+function renderSaved(failed = false) {
+  const items = savedPlaces;
+  $('#saved-empty').hidden = items.length > 0;
+  $('#saved-note').hidden = !items.length;
+  savedListEl.innerHTML = items.map(s => rowHtml({ ...s.p, Distance: undefined }, lastFix, changeNote(s))).join('');
+  if (!items.length) { savedStatusEl.textContent = ''; return; }
+  const oldest = Math.min(...items.map(s => s.checkedAt || s.savedAt));
+  const count = `${items.length} saved ${items.length === 1 ? 'place' : 'places'}`;
+  savedStatusEl.textContent = navigator.onLine === false
+    ? `${count}. You're offline: ratings as last checked ${timeAgo(oldest)}.`
+    : failed
+      ? `${count}. Couldn't check for new ratings just now: showing ratings checked ${timeAgo(oldest)}.`
+      : `${count}. Ratings checked ${timeAgo(oldest)}.`;
+}
+
+async function showSaved() {
+  renderSaved();
+  const failed = await checkSaved();
+  if (parseRoute().view === 'saved') renderSaved(failed);
+}
+
+/* ---------- Sharing ----------
+   The phone's own share sheet where there is one (Android, iPhone, the Android app);
+   otherwise the link is copied. */
+
+async function sharePlace(p, btn) {
+  const url = `${location.origin}${location.pathname}#/place/${encodeURIComponent(p.FHRSID)}`;
+  const date = inspectionDate(p, 'long');
+  const text = `${p.BusinessName}${p.PostCode ? ', ' + p.PostCode : ''}: food hygiene rating ${ratingText(p.RatingValue)}`
+    + (date ? `, inspected ${date}.` : '.');
+  if (navigator.share) {
+    try { await navigator.share({ title: p.BusinessName, text, url }); } catch { /* closed without sharing */ }
+    return;
+  }
+  const label = btn.querySelector('span');
+  try {
+    await navigator.clipboard.writeText(`${text} ${url}`);
+    label.textContent = 'Link copied';
+  } catch {
+    window.prompt('Copy this link:', url);
+    return;
+  }
+  setTimeout(() => { label.textContent = 'Share'; }, 2500);
+}
+
+const STAR_ICON = filled => `<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="${filled ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2" stroke-linejoin="round" d="m12 3 2.7 5.6 6.1.8-4.5 4.2 1.1 6.1L12 16.8l-5.4 2.9 1.1-6.1-4.5-4.2 6.1-.8z"/></svg>`;
+const SHARE_BTN_ICON = SHARE_ICON.replace('aria-label="Share"', 'aria-hidden="true"').replace(/width="18" height="18"/, 'width="20" height="20"');
+
+function toolsHtml(p) {
+  const saved = !!savedEntry(p.FHRSID);
+  return `<div class="detail-tools">
+      <button type="button" class="chip tool${saved ? ' on' : ''}" id="save-btn" aria-pressed="${saved}">${STAR_ICON(saved)}<span>${saved ? 'Saved' : 'Save'}</span></button>
+      <button type="button" class="chip tool" id="share-btn">${SHARE_BTN_ICON}<span>Share</span></button>
+    </div>`;
+}
+
+let detailPlace = null;
+detailEl.addEventListener('click', e => {
+  if (!detailPlace) return;
+  if (e.target.closest('#save-btn')) {
+    toggleSaved(detailPlace);
+    detailEl.querySelector('.detail-tools').outerHTML = toolsHtml(detailPlace);
+  } else if (e.target.closest('#share-btn')) {
+    sharePlace(detailPlace, e.target.closest('#share-btn'));
+  }
+});
+
 async function showDetail(id) {
-  let p = places.get(String(id)) || state.saved.find(x => String(x.FHRSID) === String(id));
+  let p = places.get(String(id)) || savedEntry(id)?.p || state.saved.find(x => String(x.FHRSID) === String(id));
   if (!p) {
     detailEl.innerHTML = `<p class="status center">Loading…</p>`;
     try {
@@ -909,7 +1057,9 @@ async function loadHistory(p) {
 }
 
 function renderDetail(p) {
+  detailPlace = p;
   const r = ratingOf(p);
+  const savedNote = (() => { const s = savedEntry(p.FHRSID); return s ? changeNote(s) : ''; })();
   const date = inspectionDate(p, 'long');
   const dist = distanceMetres(p, state.origin);
   const addr = address(p);
@@ -929,6 +1079,8 @@ function renderDetail(p) {
       </div>
       <h1>${esc(p.BusinessName)}</h1>
       <p class="type">${esc(p.BusinessType)}</p>
+      ${toolsHtml(p)}
+      ${savedNote ? `<p class="notice">${esc(savedNote)}.</p>` : ''}
       ${p.NewRatingPending ? '<p class="notice">A new rating for this business is waiting to be published.</p>' : ''}
       ${p.SchemeType === 'FHIS' ? `<p class="notice">Scotland uses the Food Hygiene Information Scheme instead of 0 to 5 ratings.
         <strong>Pass</strong> means the business met the legal requirements for food hygiene when it was inspected;
@@ -1472,6 +1624,7 @@ function parseRoute() {
   const place = hash.match(/^#\/place\/(\d+)/);
   if (place) return { view: 'place', id: place[1] };
   if (hash === '#/settings') return { view: 'settings' };
+  if (hash === '#/saved') return { view: 'saved' };
   if (hash.startsWith('#/search?')) {
     const params = new URLSearchParams(hash.slice(hash.indexOf('?') + 1));
     const q = (params.get('q') || '').trim();
@@ -1523,14 +1676,19 @@ function route() {
   $('#view-list').hidden = r.view !== 'list' || welcome;
   detailEl.hidden = r.view !== 'place';
   $('#view-settings').hidden = r.view !== 'settings';
+  $('#view-saved').hidden = r.view !== 'saved';
   $('#back').hidden = r.view === 'list' && r.key === '#/';
   $('#settings-link').hidden = r.view === 'settings';
+  $('#saved-link').hidden = r.view === 'saved';
 
   if (r.view === 'place') {
     showDetail(r.id);
     window.scrollTo(0, 0);
   } else if (r.view === 'settings') {
     renderSettings();
+    window.scrollTo(0, 0);
+  } else if (r.view === 'saved') {
+    showSaved();
     window.scrollTo(0, 0);
   } else if (welcome) {
     window.scrollTo(0, 0);
