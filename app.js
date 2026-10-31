@@ -726,7 +726,7 @@ async function sharePlace(p, btn) {
   const url = `${location.origin}${location.pathname}#/place/${encodeURIComponent(p.FHRSID)}`;
   const date = inspectionDate(p, 'long');
   const text = `${p.BusinessName}${p.PostCode ? ', ' + p.PostCode : ''}: food hygiene rating ${ratingText(p.RatingValue)}`
-    + (date ? `, inspected ${date}.` : '.');
+    + (date ? `, inspected ${date}` : '') + '. Via Before You Eat.';
   if (navigator.share) {
     try { await navigator.share({ title: p.BusinessName, text, url }); } catch { /* closed without sharing */ }
     return;
