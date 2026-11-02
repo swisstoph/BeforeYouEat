@@ -1,31 +1,31 @@
 {
- "version": "202610182014",
- "built": "2026-10-18T20:14:29+00:00",
+ "version": "202611021139",
+ "built": "2026-11-02T11:39:25+00:00",
  "note": "Cuisine of FSA places. Each entry is [cuisine, source]; source is osm, overture or name.",
- "overture_release": "2026-09-23.1",
+ "overture_release": "2026-10-21.0",
  "licence": [
   "Cuisine data from OpenStreetMap \u00a9 OpenStreetMap contributors, ODbL 1.0. https://www.openstreetmap.org/copyright",
   "Cuisine data from Overture Maps (https://overturemaps.org): data from Meta and Microsoft under CDLA Permissive 2.0; Copyright 2024 Foursquare Labs, Inc., Apache 2.0."
  ],
- "places_with_cuisine": 136223,
+ "places_with_cuisine": 138306,
  "by_source": {
-  "overture": 56601,
-  "name": 27068,
-  "osm": 52554
+  "overture": 59660,
+  "name": 26131,
+  "osm": 52515
  },
  "coverage_by_business_type": {
   "Restaurant/Cafe/Canteen": {
-   "places": 134886,
-   "with_cuisine": 79585,
-   "share": 0.59,
+   "places": 134967,
+   "with_cuisine": 80962,
+   "share": 0.6,
    "by_source": {
-    "osm": 28098,
-    "overture": 35651,
-    "name": 15836
+    "osm": 28075,
+    "overture": 37615,
+    "name": 15272
    }
   },
   "Retailers - other": {
-   "places": 104255,
+   "places": 104283,
    "with_cuisine": 1797,
    "share": 0.017,
    "by_source": {
@@ -33,27 +33,27 @@
    }
   },
   "Takeaway/sandwich shop": {
-   "places": 60508,
-   "with_cuisine": 44450,
-   "share": 0.735,
+   "places": 60435,
+   "with_cuisine": 44862,
+   "share": 0.742,
    "by_source": {
-    "osm": 19943,
-    "overture": 16934,
-    "name": 7573
+    "osm": 19922,
+    "overture": 17695,
+    "name": 7245
    }
   },
   "Pub/bar/nightclub": {
-   "places": 50027,
-   "with_cuisine": 2677,
-   "share": 0.054,
+   "places": 50007,
+   "with_cuisine": 2810,
+   "share": 0.056,
    "by_source": {
-    "osm": 987,
-    "overture": 1298,
-    "name": 392
+    "osm": 978,
+    "overture": 1438,
+    "name": 394
    }
   },
   "Hospitals/Childcare/Caring Premises": {
-   "places": 39459,
+   "places": 39460,
    "with_cuisine": 15,
    "share": 0.0,
    "by_source": {
@@ -61,7 +61,7 @@
    }
   },
   "School/college/university": {
-   "places": 35615,
+   "places": 35556,
    "with_cuisine": 13,
    "share": 0.0,
    "by_source": {
@@ -69,25 +69,25 @@
    }
   },
   "Other catering premises": {
-   "places": 30121,
-   "with_cuisine": 4936,
-   "share": 0.164,
+   "places": 30254,
+   "with_cuisine": 5045,
+   "share": 0.167,
    "by_source": {
-    "osm": 1259,
-    "overture": 2141,
-    "name": 1536
+    "osm": 1271,
+    "overture": 2262,
+    "name": 1512
    }
   },
   "Retailers - supermarkets/hypermarkets": {
-   "places": 15827,
-   "with_cuisine": 67,
+   "places": 15825,
+   "with_cuisine": 68,
    "share": 0.004,
    "by_source": {
-    "osm": 67
+    "osm": 68
    }
   },
   "Hotel/bed & breakfast/guest house": {
-   "places": 13702,
+   "places": 13668,
    "with_cuisine": 76,
    "share": 0.006,
    "by_source": {
@@ -95,25 +95,25 @@
    }
   },
   "Mobile caterer": {
-   "places": 10161,
-   "with_cuisine": 2451,
-   "share": 0.241,
+   "places": 10158,
+   "with_cuisine": 2501,
+   "share": 0.246,
    "by_source": {
     "osm": 143,
-    "overture": 577,
-    "name": 1731
+    "overture": 650,
+    "name": 1708
    }
   },
   "Manufacturers/packers": {
-   "places": 7961,
-   "with_cuisine": 130,
+   "places": 7985,
+   "with_cuisine": 131,
    "share": 0.016,
    "by_source": {
-    "osm": 130
+    "osm": 131
    }
   },
   "Distributors/Transporters": {
-   "places": 3854,
+   "places": 3856,
    "with_cuisine": 19,
    "share": 0.005,
    "by_source": {
@@ -121,7 +121,7 @@
    }
   },
   "Farmers/growers": {
-   "places": 1786,
+   "places": 1798,
    "with_cuisine": 2,
    "share": 0.001,
    "by_source": {
@@ -129,7 +129,7 @@
    }
   },
   "Importers/Exporters": {
-   "places": 617,
+   "places": 618,
    "with_cuisine": 5,
    "share": 0.008,
    "by_source": {
@@ -138,46 +138,46 @@
   }
  },
  "top_cuisines": {
-  "coffee_shop": 24396,
-  "cafe": 14745,
-  "pizza": 11656,
-  "indian": 10794,
-  "chinese": 10598,
-  "fish_and_chips": 9475,
-  "burger": 6177,
-  "sandwich": 5794,
-  "bakery": 4887,
-  "chicken": 4607,
-  "italian": 3970,
-  "kebab": 2861,
-  "british": 1957,
-  "thai": 1925,
-  "asian": 1361,
-  "sandwich_shop": 1310,
-  "tea_room": 1217,
-  "sushi": 1194,
-  "turkish": 1189,
-  "japanese": 1016,
-  "doner_kebab": 978,
-  "ice_cream": 909,
-  "greek": 867,
-  "dessert_shop": 861,
-  "dessert": 790,
-  "seafood": 686,
-  "mediterranean": 677,
-  "caribbean": 671,
-  "breakfast": 664,
-  "portuguese": 605,
-  "mexican": 596,
-  "delicatessen": 580,
-  "french": 555,
-  "regional": 484,
-  "korean": 483,
-  "cake": 480,
-  "american": 455,
-  "lebanese": 434,
-  "vietnamese": 417,
-  "irish_pub": 402
+  "coffee_shop": 24784,
+  "cafe": 14511,
+  "pizza": 11773,
+  "indian": 10932,
+  "chinese": 10688,
+  "fish_and_chips": 9696,
+  "burger": 6151,
+  "sandwich": 5727,
+  "bakery": 4779,
+  "chicken": 4662,
+  "italian": 3964,
+  "kebab": 2827,
+  "british": 2085,
+  "thai": 1929,
+  "sandwich_shop": 1496,
+  "asian": 1318,
+  "tea_room": 1225,
+  "turkish": 1219,
+  "sushi": 1210,
+  "dessert_shop": 1065,
+  "japanese": 1045,
+  "doner_kebab": 967,
+  "ice_cream": 886,
+  "greek": 877,
+  "dessert": 734,
+  "seafood": 701,
+  "caribbean": 701,
+  "mediterranean": 683,
+  "breakfast": 670,
+  "mexican": 628,
+  "delicatessen": 612,
+  "portuguese": 598,
+  "french": 564,
+  "korean": 512,
+  "regional": 486,
+  "cake": 483,
+  "american": 481,
+  "irish_pub": 475,
+  "ice_cream_shop": 465,
+  "lebanese": 455
  },
  "districts": [
   "AB10",
@@ -1593,6 +1593,7 @@
   "LL60",
   "LL61",
   "LL62",
+  "LL63",
   "LL64",
   "LL65",
   "LL66",
@@ -2617,6 +2618,7 @@
   "TA8",
   "TA9",
   "TD1",
+  "TD10",
   "TD11",
   "TD12",
   "TD13",
